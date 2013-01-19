@@ -13,7 +13,8 @@ type ControllerInterface interface {
 	Head()
 	Patch()
 	Options()
-	// Render() error
+	Render()
+	Output()
 }
 
 type Controller struct {
@@ -50,4 +51,16 @@ func (this *Controller) Patch() {
 
 func (this *Controller) Options() {
 	http.Error(this.Ctx.Response, "Method Not Allowed", 405)
+}
+
+func (this *Controller) Render() {
+	// 
+}
+
+func (this *Controller) Output() {
+	// 
+}
+
+func (this *Controller) SetVar(k string, v interface{}) {
+
 }

@@ -1,20 +1,15 @@
 package xgo
 
-import (
-	"os"
-)
-
 var (
-	app              *App
-	util             Util
-	ListenAddr       string = ""
-	ListenPort       int    = 80
-	RunMode          string = "http"
-	EnableDaemon     bool   = false
-	EnableStats      bool   = true
-	EnableSession    bool   = true
-	EnablePprof      bool   = true
-	EnableAutoRender bool   = true
+	app           *App
+	util          Util
+	ListenAddr    string = ""
+	ListenPort    int    = 80
+	RunMode       string = "http"
+	EnableDaemon  bool   = false
+	EnableStats   bool   = true
+	EnableSession bool   = true
+	EnablePprof   bool   = true
 )
 
 func init() {
@@ -37,7 +32,6 @@ func Run() {
 		util.CallMethod(&util, "SetDaemonMode", 1, 0)
 	}
 	app.Run(ListenAddr, ListenPort)
-	os.Exit(0)
 }
 
 func LoadConfig() {

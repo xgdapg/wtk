@@ -187,4 +187,19 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 	util.CallMethod(ci, method)
+	if w.HasOutput {
+		return
+	}
+
+	//If we need other filter to process datas, call it on this step.
+
+	util.CallMethod(ci, "Render")
+	if w.HasOutput {
+		return
+	}
+
+	util.CallMethod(ci, "Output")
+	if w.HasOutput {
+		return
+	}
 }
