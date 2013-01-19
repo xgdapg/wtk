@@ -74,5 +74,5 @@ func (this *Context) SetCookie(name string, value string, expires int64) {
 }
 
 func (this *Context) GetParam(name string) string {
-	return this.Request.FormValue(name)
+	return this.Request.Form.Get(name)
 }

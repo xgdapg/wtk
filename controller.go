@@ -13,7 +13,7 @@ type ControllerInterface interface {
 	Head()
 	Patch()
 	Options()
-	Render() error
+	// Render() error
 }
 
 type Controller struct {

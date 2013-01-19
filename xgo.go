@@ -1,12 +1,12 @@
 package xgo
 
 import (
-	"reflect"
+	"os"
 )
 
 var (
 	app              *App
-	util             *Util
+	util             Util
 	ListenAddr       string = ""
 	ListenPort       int    = 80
 	RunMode          string = "http"
@@ -18,8 +18,14 @@ var (
 )
 
 func init() {
-	app := &App{}
-	util := &Util{}
+	app = NewApp()
+	util = Util{}
+}
+
+func NewApp() *App {
+	return &App{
+		router: &Router{},
+	}
 }
 
 func RegisterController(pattern string, c ControllerInterface) {
@@ -28,15 +34,10 @@ func RegisterController(pattern string, c ControllerInterface) {
 
 func Run() {
 	if EnableDaemon {
-		method := reflect.New(reflect.TypeOf(*util)).MethodByName("SetDaemonMode")
-		if method.Kind() == reflect.Func {
-			in := make([]reflect.Value, 2)
-			in[0] = reflect.ValueOf(1)
-			in[1] = reflect.ValueOf(0)
-			method.Call(in)
-		}
+		util.CallMethod(&util, "SetDaemonMode", 1, 0)
 	}
 	app.Run(ListenAddr, ListenPort)
+	os.Exit(0)
 }
 
 func LoadConfig() {

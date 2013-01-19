@@ -3,7 +3,7 @@ package xgo
 import (
 	"errors"
 	"net/http"
-	"net/url"
+	// "net/url"
 	"reflect"
 	"regexp"
 	"strings"
@@ -45,7 +45,7 @@ func (this *Router) AddRule(pattern string, c ControllerInterface) error {
 		Pattern:        "",
 		Regexp:         nil,
 		Params:         []string{},
-		ControllerType: reflect.TypeOf(*c),
+		ControllerType: reflect.Indirect(reflect.ValueOf(c)).Type(),
 	}
 	paramCnt := strings.Count(pattern, ":")
 	if paramCnt > 0 {
@@ -53,14 +53,15 @@ func (this *Router) AddRule(pattern string, c ControllerInterface) error {
 		if err != nil {
 			return err
 		}
-		matches := re.FindStringSubmatch(pattern)[1:]
+		matches := re.FindAllStringSubmatch(pattern, paramCnt)
 		if len(matches) != paramCnt {
 			return errors.New("Regexp match error")
 		}
 		for _, match := range matches {
-			index := strings.Index(match, "(")
-			rule.Params = append(rule.Params, match[0:index])
-			pattern = strings.Replace(pattern, match, match[index:], 1)
+			m := match[0]
+			index := strings.Index(m, "(")
+			rule.Params = append(rule.Params, m[0:index])
+			pattern = "^" + strings.Replace(pattern, m, m[index:], 1)
 		}
 		re, err = regexp.Compile(pattern)
 		if err != nil {
@@ -76,22 +77,23 @@ func (this *Router) AddRule(pattern string, c ControllerInterface) error {
 }
 
 func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-			// if !RecoverPanic {
-			// 	panic(err)
-			// } else {
-			// 	Critical("Handler crashed with error", err)
-			// 	for i := 1; ; i += 1 {
-			// 		_, file, line, ok := runtime.Caller(i)
-			// 		if !ok {
-			// 			break
-			// 		}
-			// 		Critical(file, line)
-			// 	}
-			// }
-		}
-	}()
+	// defer func() {
+	// if err := recover(); err != nil {
+	// fmt.Println("RECOVER:", err)
+	// if !RecoverPanic {
+	// 	panic(err)
+	// } else {
+	// 	Critical("Handler crashed with error", err)
+	// 	for i := 1; ; i += 1 {
+	// 		_, file, line, ok := runtime.Caller(i)
+	// 		if !ok {
+	// 			break
+	// 		}
+	// 		Critical(file, line)
+	// 	}
+	// }
+	// }
+	// }()
 
 	w := &responseWriter{
 		writer:    rw,
@@ -153,39 +155,36 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// 		return
 	// 	}
 	// }
-
-	cv := reflect.New(routingRule.ControllerType)
-	init := cv.MethodByName("Init")
-	in := make([]reflect.Value, 2)
+	r.ParseForm()
+	ci := reflect.New(routingRule.ControllerType).Interface()
+	// ci := reflect.Indirect(reflect.New(routingRule.ControllerType)).Interface()
 	ctx := &Context{
 		Response: w,
 		Request:  r,
 	}
-	in[0] = reflect.ValueOf(ctx)
-	in[1] = reflect.ValueOf(routingRule.ControllerType.Name())
-	init.Call(in)
+	util.CallMethod(ci, "Init", ctx, routingRule.ControllerType.Name())
 	if w.HasOutput {
 		return
 	}
 
-	var method reflect.Value
+	var method string
 	switch r.Method {
 	case "GET":
-		method = cv.MethodByName("Get")
+		method = "Get"
 	case "POST":
-		method = cv.MethodByName("Post")
+		method = "Post"
 	case "HEAD":
-		method = cv.MethodByName("Head")
+		method = "Head"
 	case "DELETE":
-		method = cv.MethodByName("Delete")
+		method = "Delete"
 	case "PUT":
-		method = cv.MethodByName("Put")
+		method = "Put"
 	case "PATCH":
-		method = cv.MethodByName("Patch")
+		method = "Patch"
 	case "OPTIONS":
-		method = cv.MethodByName("Options")
+		method = "Options"
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 	}
-	method.Call([]reflect.Value{})
+	util.CallMethod(ci, method)
 }
