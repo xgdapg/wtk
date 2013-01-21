@@ -36,8 +36,14 @@ type RoutingRule struct {
 }
 
 type Router struct {
+	app         *App
 	Rules       []*RoutingRule
 	StaticRules []*RoutingRule
+	StaticDir   map[string]string
+}
+
+func (this *Router) SetStaticPath(sPath, fPath string) {
+	this.StaticDir[sPath] = fPath
 }
 
 func (this *Router) AddRule(pattern string, c ControllerInterface) error {
@@ -105,13 +111,13 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	pathEnd := urlPath[pathLen-1]
 
 	//static file server
-	// for prefix, staticDir := range StaticDir {
-	// 	if strings.HasPrefix(r.URL.Path, prefix) {
-	// 		file := staticDir + r.URL.Path[len(prefix):]
-	// 		http.ServeFile(w, r, file)
-	// 		return
-	// 	}
-	// }
+	for sPath, fPath := range this.StaticDir {
+		if strings.HasPrefix(urlPath, sPath) {
+			file := fPath + urlPath[len(sPath):]
+			http.ServeFile(w, r, file)
+			return
+		}
+	}
 
 	//first find path from the fixrouters to Improve Performance
 	for _, rule := range this.StaticRules {
@@ -162,7 +168,12 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Response: w,
 		Request:  r,
 	}
-	util.CallMethod(ci, "Init", ctx, routingRule.ControllerType.Name())
+	tpl := &Template{
+		tpl:       nil,
+		tplVars:   make(map[string]interface{}),
+		tplResult: nil,
+	}
+	util.CallMethod(ci, "Init", ctx, tpl, routingRule.ControllerType.Name())
 	if w.HasOutput {
 		return
 	}

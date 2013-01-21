@@ -5,14 +5,29 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
+	"os"
 )
 
 type App struct {
 	router *Router
 }
 
+func (this *App) init() *App {
+	this.router = &Router{
+		app:         this,
+		Rules:       []*RoutingRule{},
+		StaticRules: []*RoutingRule{},
+		StaticDir:   make(map[string]string),
+	}
+	return this
+}
+
 func (this *App) RegisterController(pattern string, c ControllerInterface) {
 	this.router.AddRule(pattern, c)
+}
+
+func (this *App) SetStaticPath(sPath, fPath string) {
+	this.router.SetStaticPath(sPath, fPath)
 }
 
 func (this *App) Run(addr string, port int) {
@@ -33,4 +48,9 @@ func (this *App) Run(addr string, port int) {
 	if err != nil {
 		panic("ListenAndServe error: " + err.Error())
 	}
+}
+
+func (this *App) AppPath() string {
+	path, _ := os.Getwd()
+	return path
 }

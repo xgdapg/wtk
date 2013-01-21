@@ -5,7 +5,7 @@ import (
 )
 
 type ControllerInterface interface {
-	Init(ct *Context, cn string)
+	Init(*Context, *Template, string)
 	Get()
 	Post()
 	Delete()
@@ -19,10 +19,12 @@ type ControllerInterface interface {
 
 type Controller struct {
 	Ctx *Context
+	Tpl *Template
 }
 
-func (this *Controller) Init(ctx *Context, cn string) {
+func (this *Controller) Init(ctx *Context, tpl *Template, cn string) {
 	this.Ctx = ctx
+	this.Tpl = tpl
 }
 
 func (this *Controller) Get() {
@@ -54,13 +56,9 @@ func (this *Controller) Options() {
 }
 
 func (this *Controller) Render() {
-	// 
+	this.Tpl.Parse()
 }
 
 func (this *Controller) Output() {
-	// 
-}
-
-func (this *Controller) SetVar(k string, v interface{}) {
-
+	this.Ctx.WriteString(this.Tpl.GetResult())
 }

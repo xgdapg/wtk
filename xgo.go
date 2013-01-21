@@ -18,13 +18,15 @@ func init() {
 }
 
 func NewApp() *App {
-	return &App{
-		router: &Router{},
-	}
+	return new(App).init()
 }
 
 func RegisterController(pattern string, c ControllerInterface) {
 	app.RegisterController(pattern, c)
+}
+
+func SetStaticPath(sPath, fPath string) {
+	app.SetStaticPath(sPath, fPath)
 }
 
 func Run() {
