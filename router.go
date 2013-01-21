@@ -178,6 +178,16 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hc := &HookController{
+		Ctx: ctx,
+		Tpl: tpl,
+	}
+
+	this.app.hook.CallHook("AfterInit", urlPath, hc)
+	if w.HasOutput {
+		return
+	}
+
 	var method string
 	switch r.Method {
 	case "GET":
@@ -197,19 +207,48 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 	}
+
+	this.app.hook.CallHook("Before"+r.Method, urlPath, hc)
+	if w.HasOutput {
+		return
+	}
+
 	util.CallMethod(ci, method)
 	if w.HasOutput {
 		return
 	}
 
-	//If we need other filter to process datas, call it on this step.
+	this.app.hook.CallHook("After"+r.Method, urlPath, hc)
+	if w.HasOutput {
+		return
+	}
+
+	this.app.hook.CallHook("BeforeRender", urlPath, hc)
+	if w.HasOutput {
+		return
+	}
 
 	util.CallMethod(ci, "Render")
 	if w.HasOutput {
 		return
 	}
 
+	this.app.hook.CallHook("AfterRender", urlPath, hc)
+	if w.HasOutput {
+		return
+	}
+
+	this.app.hook.CallHook("BeforeOutput", urlPath, hc)
+	if w.HasOutput {
+		return
+	}
+
 	util.CallMethod(ci, "Output")
+	if w.HasOutput {
+		return
+	}
+
+	this.app.hook.CallHook("AfterOutput", urlPath, hc)
 	if w.HasOutput {
 		return
 	}

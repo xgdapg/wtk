@@ -25,6 +25,10 @@ func RegisterController(pattern string, c ControllerInterface) {
 	app.RegisterController(pattern, c)
 }
 
+func AddControllerHook(event string, hookFunc controllerHookFunc) {
+	app.AddControllerHook(event, hookFunc)
+}
+
 func SetStaticPath(sPath, fPath string) {
 	app.SetStaticPath(sPath, fPath)
 }

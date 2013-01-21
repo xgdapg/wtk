@@ -62,3 +62,40 @@ func (this *Controller) Render() {
 func (this *Controller) Output() {
 	this.Ctx.WriteString(this.Tpl.GetResult())
 }
+
+type ControllerHook struct {
+	app   *App
+	hooks []*controllerHookData
+}
+
+func (this *ControllerHook) AddHook(event string, hookFunc controllerHookFunc) {
+	data := &controllerHookData{
+		Event: event,
+		Func:  hookFunc,
+	}
+	this.hooks = append(this.hooks, data)
+
+}
+
+func (this *ControllerHook) CallHook(event string, url string, hc *HookController) {
+	for _, hook := range this.hooks {
+		if hook.Event == event {
+			hook.Func(url, hc)
+			if hc.Ctx.Response.(*responseWriter).HasOutput {
+				return
+			}
+		}
+	}
+}
+
+type controllerHookFunc func(string, *HookController)
+
+type controllerHookData struct {
+	Event string
+	Func  controllerHookFunc
+}
+
+type HookController struct {
+	Ctx *Context
+	Tpl *Template
+}

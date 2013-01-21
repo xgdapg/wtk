@@ -10,6 +10,7 @@ import (
 
 type App struct {
 	router *Router
+	hook   *ControllerHook
 }
 
 func (this *App) init() *App {
@@ -19,11 +20,19 @@ func (this *App) init() *App {
 		StaticRules: []*RoutingRule{},
 		StaticDir:   make(map[string]string),
 	}
+	this.hook = &ControllerHook{
+		app:   this,
+		hooks: []*controllerHookData{},
+	}
 	return this
 }
 
 func (this *App) RegisterController(pattern string, c ControllerInterface) {
 	this.router.AddRule(pattern, c)
+}
+
+func (this *App) AddControllerHook(event string, hookFunc controllerHookFunc) {
+	this.hook.AddHook(event, hookFunc)
 }
 
 func (this *App) SetStaticPath(sPath, fPath string) {
