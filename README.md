@@ -1,7 +1,8 @@
 ## Xgo
 =======
 Xgo is a simple web framework to build webapp easily in Go.  
-It was modified based on [astaxie/beego](https://github.com/astaxie/beego) at first, and now it has changed a lot.
+It was modified based on [astaxie/beego](https://github.com/astaxie/beego) at first, and now it has changed a lot.  
+For self-use. Unfinished yet :)
 
 ## Installation
 ============
