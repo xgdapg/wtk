@@ -154,16 +154,8 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//execute middleware filters
-	// for _, filter := range p.filters {
-	// 	filter(w, r)
-	// 	if w.HasOutput {
-	// 		return
-	// 	}
-	// }
 	r.ParseForm()
 	ci := reflect.New(routingRule.ControllerType).Interface()
-	// ci := reflect.Indirect(reflect.New(routingRule.ControllerType)).Interface()
 	ctx := &Context{
 		Response: w,
 		Request:  r,
