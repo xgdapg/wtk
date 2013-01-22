@@ -1,15 +1,16 @@
 package xgo
 
 var (
-	app           *xgoApp
-	util          xgoUtil
-	ListenAddr    string = ""
-	ListenPort    int    = 80
-	RunMode       string = "http"
-	EnableDaemon  bool   = false
-	EnableStats   bool   = true
-	EnableSession bool   = true
-	EnablePprof   bool   = true
+	app          *xgoApp
+	util         xgoUtil
+	ListenAddr   string = ""
+	ListenPort   int    = 80
+	RunMode      string = "http"
+	EnableDaemon bool   = false
+	EnableStats  bool   = true
+	SessionName  string = "XGOSESSID"
+	SessionTTL   int64  = 60 * 15
+	EnablePprof  bool   = true
 )
 
 func init() {
@@ -25,12 +26,16 @@ func RegisterController(pattern string, c xgoControllerInterface) {
 	app.RegisterController(pattern, c)
 }
 
-func AddControllerHook(event string, hookFunc xgoControllerHookFunc) {
-	app.AddControllerHook(event, hookFunc)
+func RegisterControllerHook(event string, hookFunc xgoControllerHookFunc) {
+	app.RegisterControllerHook(event, hookFunc)
 }
 
 func SetStaticPath(sPath, fPath string) {
 	app.SetStaticPath(sPath, fPath)
+}
+
+func RegisterSessionStorage(storage xgoSessionStorageInterface) {
+	app.RegisterSessionStorage(storage)
 }
 
 func Run() {

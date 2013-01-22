@@ -5,7 +5,7 @@ import (
 )
 
 type xgoControllerInterface interface {
-	Init(*xgoContext, *xgoTemplate, string)
+	Init(*xgoContext, *xgoTemplate, *xgoSession, string)
 	Get()
 	Post()
 	Delete()
@@ -20,11 +20,13 @@ type xgoControllerInterface interface {
 type Controller struct {
 	Context  *xgoContext
 	Template *xgoTemplate
+	Session  *xgoSession
 }
 
-func (this *Controller) Init(ctx *xgoContext, tpl *xgoTemplate, cn string) {
+func (this *Controller) Init(ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
 	this.Context = ctx
 	this.Template = tpl
+	this.Session = sess
 }
 
 func (this *Controller) Get() {
@@ -98,4 +100,5 @@ type xgoControllerHookData struct {
 type HookController struct {
 	Context  *xgoContext
 	Template *xgoTemplate
+	Session  *xgoSession
 }

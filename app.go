@@ -9,8 +9,9 @@ import (
 )
 
 type xgoApp struct {
-	router *xgoRouter
-	hook   *xgoControllerHook
+	router  *xgoRouter
+	hook    *xgoControllerHook
+	session *xgoSessionManager
 }
 
 func (this *xgoApp) init() *xgoApp {
@@ -24,6 +25,8 @@ func (this *xgoApp) init() *xgoApp {
 		app:   this,
 		hooks: []*xgoControllerHookData{},
 	}
+	this.session = new(xgoSessionManager)
+	this.session.RegisterStorage(new(xgoDefaultSessionStorage))
 	return this
 }
 
@@ -31,7 +34,7 @@ func (this *xgoApp) RegisterController(pattern string, c xgoControllerInterface)
 	this.router.AddRule(pattern, c)
 }
 
-func (this *xgoApp) AddControllerHook(event string, hookFunc xgoControllerHookFunc) {
+func (this *xgoApp) RegisterControllerHook(event string, hookFunc xgoControllerHookFunc) {
 	this.hook.AddHook(event, hookFunc)
 }
 
@@ -39,7 +42,12 @@ func (this *xgoApp) SetStaticPath(sPath, fPath string) {
 	this.router.SetStaticPath(sPath, fPath)
 }
 
+func (this *xgoApp) RegisterSessionStorage(storage xgoSessionStorageInterface) {
+	this.session.RegisterStorage(storage)
+}
+
 func (this *xgoApp) Run(addr string, port int) {
+	go this.session.sessionStorage.GC()
 	listenAddr := fmt.Sprintf("%s:%d", addr, port)
 	var err error
 	switch RunMode {

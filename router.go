@@ -165,7 +165,13 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		tplVars:   make(map[string]interface{}),
 		tplResult: nil,
 	}
-	util.CallMethod(ci, "Init", ctx, tpl, routingRule.ControllerType.Name())
+	sess := &xgoSession{
+		sessionManager: this.app.session,
+		sessionId:      ctx.GetCookie(SessionName),
+		ctx:            ctx,
+		data:           nil,
+	}
+	util.CallMethod(ci, "Init", ctx, tpl, sess, routingRule.ControllerType.Name())
 	if w.HasOutput {
 		return
 	}
@@ -173,6 +179,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	hc := &HookController{
 		Context:  ctx,
 		Template: tpl,
+		Session:  sess,
 	}
 
 	this.app.hook.CallHook("AfterInit", urlPath, hc)
