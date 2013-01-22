@@ -34,13 +34,14 @@ type MainController struct {
 }
 
 func (this *MainController) Get() {
-	id := this.Ctx.GetParam(":id")
-	this.Tpl.SetVar("Title", "The test title")
-	this.Tpl.SetVar("Content", "The test content")
-	this.Tpl.SetVar("ID", "Div data")
-	// this.Tpl.SetVar("Subb", "Subb data")
-	this.Tpl.SetTemplate("index.tpl")
-	this.Tpl.SetSubTemplate("Sub", "div.tpl")
-	this.Tpl.SetSubTemplate("Subsub", "sub.tpl")
+	this.Template.SetVar("Title", "The test title")
+	this.Template.SetVar("Content", "The test content")
+	this.Template.SetVar("Div", "Div data: "+this.Session.Get("key"))
+	// this.Template.SetVar("Subb", "Subb data")
+	this.Template.SetTemplate("index.tpl")
+	this.Template.SetSubTemplate("Sub", "div.tpl")
+	this.Template.SetSubTemplate("Subsub", "sub.tpl")
+	this.Context.SetCookie("asdf", this.Context.Request.URL.Path, 60*60)
+	this.Session.Set("key", "sess data")
 }
 ```
