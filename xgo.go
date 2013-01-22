@@ -1,8 +1,14 @@
 package xgo
 
+import (
+	"os"
+)
+
 var (
 	app          *xgoApp
 	util         xgoUtil
+	cfg          *xgoConfig
+	cfgFile      string = "app.conf"
 	ListenAddr   string = ""
 	ListenPort   int    = 80
 	RunMode      string = "http"
@@ -14,6 +20,19 @@ var (
 )
 
 func init() {
+	// Check the first argument of cmd line,
+	// if it is not a flag (begin with '-'),
+	// try to use it as the config file path.
+	if len(os.Args) > 1 {
+		arg := os.Args[1]
+		if arg[0] != '-' {
+			cfgFile = arg
+		}
+	}
+
+	cfg = &xgoConfig{}
+	LoadConfig()
+
 	app = NewApp()
 	util = xgoUtil{}
 }
@@ -46,9 +65,36 @@ func Run() {
 }
 
 func LoadConfig() {
-
+	err := cfg.LoadConfig("app.conf")
+	if err != nil {
+		return
+	}
+	if v, ok := cfg.GetConfig("ListenAddr").String(); ok {
+		ListenAddr = v
+	}
+	if v, ok := cfg.GetConfig("ListenPort").Int(); ok {
+		ListenPort = v
+	}
+	if v, ok := cfg.GetConfig("RunMode").String(); ok {
+		RunMode = v
+	}
+	if v, ok := cfg.GetConfig("EnableDaemon").Bool(); ok {
+		EnableDaemon = v
+	}
+	if v, ok := cfg.GetConfig("EnableStats").Bool(); ok {
+		EnableStats = v
+	}
+	if v, ok := cfg.GetConfig("SessionName").String(); ok {
+		SessionName = v
+	}
+	if v, ok := cfg.GetConfig("SessionTTL").Int(); ok {
+		SessionTTL = int64(v)
+	}
+	if v, ok := cfg.GetConfig("EnablePprof").Bool(); ok {
+		EnablePprof = v
+	}
 }
 
-func GetConfig(key string) string {
-	return ""
+func GetConfig(key string) *xgoConfigValue {
+	return cfg.GetConfig(key)
 }
