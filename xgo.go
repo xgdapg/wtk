@@ -1,8 +1,8 @@
 package xgo
 
 var (
-	app           *App
-	util          Util
+	app           *xgoApp
+	util          xgoUtil
 	ListenAddr    string = ""
 	ListenPort    int    = 80
 	RunMode       string = "http"
@@ -14,18 +14,18 @@ var (
 
 func init() {
 	app = NewApp()
-	util = Util{}
+	util = xgoUtil{}
 }
 
-func NewApp() *App {
-	return new(App).init()
+func NewApp() *xgoApp {
+	return new(xgoApp).init()
 }
 
-func RegisterController(pattern string, c ControllerInterface) {
+func RegisterController(pattern string, c xgoControllerInterface) {
 	app.RegisterController(pattern, c)
 }
 
-func AddControllerHook(event string, hookFunc controllerHookFunc) {
+func AddControllerHook(event string, hookFunc xgoControllerHookFunc) {
 	app.AddControllerHook(event, hookFunc)
 }
 

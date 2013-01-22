@@ -9,45 +9,45 @@ import (
 	"strings"
 )
 
-type responseWriter struct {
+type xgoResponseWriter struct {
 	writer    http.ResponseWriter
 	HasOutput bool
 }
 
-func (this *responseWriter) Header() http.Header {
+func (this *xgoResponseWriter) Header() http.Header {
 	return this.writer.Header()
 }
 
-func (this *responseWriter) Write(p []byte) (int, error) {
+func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 	this.HasOutput = true
 	return this.writer.Write(p)
 }
 
-func (this *responseWriter) WriteHeader(code int) {
+func (this *xgoResponseWriter) WriteHeader(code int) {
 	this.HasOutput = true
 	this.writer.WriteHeader(code)
 }
 
-type RoutingRule struct {
+type xgoRoutingRule struct {
 	Pattern        string
 	Regexp         *regexp.Regexp
 	Params         []string
 	ControllerType reflect.Type
 }
 
-type Router struct {
-	app         *App
-	Rules       []*RoutingRule
-	StaticRules []*RoutingRule
+type xgoRouter struct {
+	app         *xgoApp
+	Rules       []*xgoRoutingRule
+	StaticRules []*xgoRoutingRule
 	StaticDir   map[string]string
 }
 
-func (this *Router) SetStaticPath(sPath, fPath string) {
+func (this *xgoRouter) SetStaticPath(sPath, fPath string) {
 	this.StaticDir[sPath] = fPath
 }
 
-func (this *Router) AddRule(pattern string, c ControllerInterface) error {
-	rule := &RoutingRule{
+func (this *xgoRouter) AddRule(pattern string, c xgoControllerInterface) error {
+	rule := &xgoRoutingRule{
 		Pattern:        "",
 		Regexp:         nil,
 		Params:         []string{},
@@ -82,7 +82,7 @@ func (this *Router) AddRule(pattern string, c ControllerInterface) error {
 	return nil
 }
 
-func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// defer func() {
 	// if err := recover(); err != nil {
 	// fmt.Println("RECOVER:", err)
@@ -101,11 +101,11 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// }
 	// }()
 
-	w := &responseWriter{
+	w := &xgoResponseWriter{
 		writer:    rw,
 		HasOutput: false,
 	}
-	var routingRule *RoutingRule
+	var routingRule *xgoRoutingRule
 	urlPath := r.URL.Path
 	pathLen := len(urlPath)
 	pathEnd := urlPath[pathLen-1]
@@ -156,11 +156,11 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	ci := reflect.New(routingRule.ControllerType).Interface()
-	ctx := &Context{
+	ctx := &xgoContext{
 		Response: w,
 		Request:  r,
 	}
-	tpl := &Template{
+	tpl := &xgoTemplate{
 		tpl:       nil,
 		tplVars:   make(map[string]interface{}),
 		tplResult: nil,
@@ -171,8 +171,8 @@ func (this *Router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	hc := &HookController{
-		Ctx: ctx,
-		Tpl: tpl,
+		Context:  ctx,
+		Template: tpl,
 	}
 
 	this.app.hook.CallHook("AfterInit", urlPath, hc)

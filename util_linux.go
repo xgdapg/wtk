@@ -5,7 +5,7 @@ import (
 	"syscall"
 )
 
-func (this *Util) SetDaemonMode(nochdir, noclose int) int {
+func (this xgoUtil) SetDaemonMode(nochdir, noclose int) int {
 	if syscall.Getppid() == 1 {
 		return 0
 	}

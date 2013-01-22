@@ -4,10 +4,10 @@ import (
 	"reflect"
 )
 
-type Util struct {
+type xgoUtil struct {
 }
 
-func (this Util) CallMethod(i interface{}, name string, args ...interface{}) bool {
+func (this xgoUtil) CallMethod(i interface{}, name string, args ...interface{}) bool {
 	t := reflect.TypeOf(i)
 	if t.Kind() != reflect.Ptr {
 		return false

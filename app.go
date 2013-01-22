@@ -8,38 +8,38 @@ import (
 	"os"
 )
 
-type App struct {
-	router *Router
-	hook   *ControllerHook
+type xgoApp struct {
+	router *xgoRouter
+	hook   *xgoControllerHook
 }
 
-func (this *App) init() *App {
-	this.router = &Router{
+func (this *xgoApp) init() *xgoApp {
+	this.router = &xgoRouter{
 		app:         this,
-		Rules:       []*RoutingRule{},
-		StaticRules: []*RoutingRule{},
+		Rules:       []*xgoRoutingRule{},
+		StaticRules: []*xgoRoutingRule{},
 		StaticDir:   make(map[string]string),
 	}
-	this.hook = &ControllerHook{
+	this.hook = &xgoControllerHook{
 		app:   this,
-		hooks: []*controllerHookData{},
+		hooks: []*xgoControllerHookData{},
 	}
 	return this
 }
 
-func (this *App) RegisterController(pattern string, c ControllerInterface) {
+func (this *xgoApp) RegisterController(pattern string, c xgoControllerInterface) {
 	this.router.AddRule(pattern, c)
 }
 
-func (this *App) AddControllerHook(event string, hookFunc controllerHookFunc) {
+func (this *xgoApp) AddControllerHook(event string, hookFunc xgoControllerHookFunc) {
 	this.hook.AddHook(event, hookFunc)
 }
 
-func (this *App) SetStaticPath(sPath, fPath string) {
+func (this *xgoApp) SetStaticPath(sPath, fPath string) {
 	this.router.SetStaticPath(sPath, fPath)
 }
 
-func (this *App) Run(addr string, port int) {
+func (this *xgoApp) Run(addr string, port int) {
 	listenAddr := fmt.Sprintf("%s:%d", addr, port)
 	var err error
 	switch RunMode {
@@ -59,7 +59,7 @@ func (this *App) Run(addr string, port int) {
 	}
 }
 
-func (this *App) AppPath() string {
+func (this *xgoApp) AppPath() string {
 	path, _ := os.Getwd()
 	return path
 }
