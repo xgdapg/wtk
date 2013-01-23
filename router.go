@@ -182,7 +182,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Session:  sess,
 	}
 
-	this.app.hook.CallHook("AfterInit", urlPath, hc)
+	this.app.hook.CallControllerHook("AfterInit", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -207,7 +207,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.hook.CallHook("Before"+r.Method, urlPath, hc)
+	this.app.hook.CallControllerHook("Before"+r.Method, urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -217,12 +217,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallHook("After"+r.Method, urlPath, hc)
+	this.app.hook.CallControllerHook("After"+r.Method, urlPath, hc)
 	if w.HasOutput {
 		return
 	}
 
-	this.app.hook.CallHook("BeforeRender", urlPath, hc)
+	this.app.hook.CallControllerHook("BeforeRender", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -232,12 +232,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallHook("AfterRender", urlPath, hc)
+	this.app.hook.CallControllerHook("AfterRender", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
 
-	this.app.hook.CallHook("BeforeOutput", urlPath, hc)
+	this.app.hook.CallControllerHook("BeforeOutput", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -247,7 +247,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallHook("AfterOutput", urlPath, hc)
+	this.app.hook.CallControllerHook("AfterOutput", urlPath, hc)
 	if w.HasOutput {
 		return
 	}

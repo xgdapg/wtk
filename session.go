@@ -7,7 +7,6 @@ import (
 
 type xgoSessionStorageInterface interface {
 	Init(int64)
-	GC()
 	CreateSessionID() string
 	Set(string, map[string]string)
 	Get(string) map[string]string
@@ -16,6 +15,7 @@ type xgoSessionStorageInterface interface {
 
 type xgoSessionManager struct {
 	sessionStorage xgoSessionStorageInterface
+	inited         bool
 }
 
 func (this *xgoSessionManager) RegisterStorage(storage xgoSessionStorageInterface) {
@@ -23,22 +23,33 @@ func (this *xgoSessionManager) RegisterStorage(storage xgoSessionStorageInterfac
 		return
 	}
 	this.sessionStorage = storage
-	storage.Init(SessionTTL)
+	this.inited = false
+}
+
+func (this *xgoSessionManager) checkInit() {
+	if !this.inited {
+		this.sessionStorage.Init(SessionTTL)
+		this.inited = true
+	}
 }
 
 func (this *xgoSessionManager) CreateSessionID() string {
+	this.checkInit()
 	return this.sessionStorage.CreateSessionID()
 }
 
 func (this *xgoSessionManager) Set(sid string, data map[string]string) {
+	this.checkInit()
 	this.sessionStorage.Set(sid, data)
 }
 
 func (this *xgoSessionManager) Get(sid string) map[string]string {
+	this.checkInit()
 	return this.sessionStorage.Get(sid)
 }
 
 func (this *xgoSessionManager) Delete(sid string) {
+	this.checkInit()
 	this.sessionStorage.Delete(sid)
 }
 
@@ -95,9 +106,10 @@ func (this *xgoDefaultSessionStorage) Init(ttl int64) {
 	}
 	this.ttl = ttl
 	this.datas = make(map[string]xgoDefaultSessionStorageData)
+	go this.gc()
 }
 
-func (this *xgoDefaultSessionStorage) GC() {
+func (this *xgoDefaultSessionStorage) gc() {
 	for {
 		if len(this.datas) > 0 {
 			now := time.Now().Unix()
