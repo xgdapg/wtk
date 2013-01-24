@@ -38,9 +38,9 @@ func (this *MainController) Get() {
 	this.Template.SetVar("Content", "The test content")
 	this.Template.SetVar("Div", "Div data: "+this.Session.Get("key"))
 	// this.Template.SetVar("Subb", "Subb data")
-	this.Template.SetTemplate("index.tpl")
-	this.Template.SetSubTemplate("Sub", "div.tpl")
-	this.Template.SetSubTemplate("Subsub", "sub.tpl")
+	this.Template.SetTemplateFile("index.tpl")
+	this.Template.SetSubTemplateFile("Sub", "div.tpl")
+	this.Template.SetSubTemplateFile("Subsub", "sub.tpl")
 	this.Context.SetCookie("asdf", this.Context.Request.URL.Path, 60*60)
 	this.Session.Set("key", "sess data")
 }

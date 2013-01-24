@@ -111,11 +111,13 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	pathEnd := urlPath[pathLen-1]
 
 	//static file server
-	for sPath, fPath := range this.StaticDir {
-		if strings.HasPrefix(urlPath, sPath) {
-			file := fPath + urlPath[len(sPath):]
-			http.ServeFile(w, r, file)
-			return
+	if r.Method == "GET" || r.Method == "HEAD" {
+		for sPath, fPath := range this.StaticDir {
+			if strings.HasPrefix(urlPath, sPath) {
+				file := fPath + urlPath[len(sPath):]
+				http.ServeFile(w, r, file)
+				return
+			}
 		}
 	}
 
