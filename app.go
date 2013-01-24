@@ -43,10 +43,10 @@ func (this *xgoApp) RegisterSessionStorage(storage xgoSessionStorageInterface) {
 	this.session.RegisterStorage(storage)
 }
 
-func (this *xgoApp) Run(addr string, port int) {
+func (this *xgoApp) Run(mode string, addr string, port int) {
 	listenAddr := fmt.Sprintf("%s:%d", addr, port)
 	var err error
-	switch RunMode {
+	switch mode {
 	case "http":
 		err = http.ListenAndServe(listenAddr, this.router)
 	case "fcgi":

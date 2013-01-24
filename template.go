@@ -15,27 +15,35 @@ func (this *xgoTemplate) SetVar(name string, value interface{}) {
 	this.tplVars[name] = value
 }
 
-func (this *xgoTemplate) SetTemplate(file string) bool {
+func (this *xgoTemplate) SetTemplateString(str string) bool {
 	this.tpl = template.New("")
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		return false
-	}
-	this.tpl.Parse(string(content))
+	this.tpl.Parse(str)
 	return true
 }
 
-func (this *xgoTemplate) SetSubTemplate(name, file string) bool {
+func (this *xgoTemplate) SetTemplateFile(filename string) bool {
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return false
+	}
+	return this.SetTemplateString(string(content))
+}
+
+func (this *xgoTemplate) SetSubTemplateString(name, str string) bool {
 	if this.tpl == nil {
 		return false
 	}
 	tpl := this.tpl.New(name)
-	content, err := ioutil.ReadFile(file)
+	tpl.Parse(`{{define "` + name + `"}}` + str + `{{end}}`)
+	return true
+}
+
+func (this *xgoTemplate) SetSubTemplateFile(name, filename string) bool {
+	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false
 	}
-	tpl.Parse(`{{define "` + name + `"}}` + string(content) + `{{end}}`)
-	return true
+	return this.SetSubTemplateString(name, string(content))
 }
 
 func (this *xgoTemplate) Parse() bool {

@@ -61,7 +61,7 @@ func Run() {
 	if EnableDaemon {
 		util.CallMethod(&util, "SetDaemonMode", 1, 0)
 	}
-	app.Run(ListenAddr, ListenPort)
+	app.Run(RunMode, ListenAddr, ListenPort)
 }
 
 func LoadConfig() {
