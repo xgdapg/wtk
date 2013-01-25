@@ -17,6 +17,7 @@ var (
 	SessionName  string = "XGOSESSID"
 	SessionTTL   int64  = 60 * 15
 	EnablePprof  bool   = true
+	EnableGzip   bool   = true
 )
 
 func init() {

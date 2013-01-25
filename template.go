@@ -5,6 +5,16 @@ import (
 	"io/ioutil"
 )
 
+var tplFuncMap template.FuncMap
+
+func init() {
+	tplFuncMap = make(template.FuncMap)
+}
+
+func AddTemplateFunc(name string, tplFunc interface{}) {
+	tplFuncMap[name] = tplFunc
+}
+
 type xgoTemplate struct {
 	tpl       *template.Template
 	tplVars   map[string]interface{}
@@ -53,7 +63,8 @@ func (this *xgoTemplate) Parse() bool {
 	if this.tplResult != nil {
 		return false
 	}
-	this.tplResult = &xgoTemplateResult{data: ""}
+	this.tplResult = &xgoTemplateResult{data: []byte{}}
+	this.tpl.Funcs(tplFuncMap)
 	err := this.tpl.Execute(this.tplResult, this.tplVars)
 	if err != nil {
 		return false
@@ -61,22 +72,30 @@ func (this *xgoTemplate) Parse() bool {
 	return true
 }
 
-func (this *xgoTemplate) GetResult() string {
+func (this *xgoTemplate) GetResult() []byte {
 	if this.tplResult == nil {
-		return ""
+		return []byte{}
 	}
-	return this.tplResult.GetData()
+	return this.tplResult.Bytes()
+}
+
+func (this xgoTemplate) GetResultString() string {
+	return string(this.GetResult())
 }
 
 type xgoTemplateResult struct {
-	data string
+	data []byte
 }
 
 func (this *xgoTemplateResult) Write(p []byte) (n int, err error) {
-	this.data = this.data + string(p)
+	this.data = append(this.data, p...)
 	return len(p), nil
 }
 
-func (this *xgoTemplateResult) GetData() string {
+func (this *xgoTemplateResult) String() string {
+	return string(this.data)
+}
+
+func (this *xgoTemplateResult) Bytes() []byte {
 	return this.data
 }

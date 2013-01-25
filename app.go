@@ -44,7 +44,7 @@ func (this *xgoApp) RegisterSessionStorage(storage xgoSessionStorageInterface) {
 }
 
 func (this *xgoApp) Run(mode string, addr string, port int) {
-	listenAddr := fmt.Sprintf("%s:%d", addr, port)
+	listenAddr := net.JoinHostPort(addr, fmt.Sprintf("%d", port))
 	var err error
 	switch mode {
 	case "http":

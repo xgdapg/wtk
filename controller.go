@@ -62,5 +62,5 @@ func (this *Controller) Render() {
 }
 
 func (this *Controller) Output() {
-	this.Context.WriteString(this.Template.GetResult())
+	this.Context.WriteBytes(this.Template.GetResult())
 }

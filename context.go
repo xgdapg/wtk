@@ -1,6 +1,8 @@
 package xgo
 
 import (
+	"bytes"
+	"compress/gzip"
 	"mime"
 	"net/http"
 	"strings"
@@ -13,7 +15,22 @@ type xgoContext struct {
 }
 
 func (this *xgoContext) WriteString(content string) {
-	this.Response.Write([]byte(content))
+	this.WriteBytes([]byte(content))
+}
+
+func (this *xgoContext) WriteBytes(content []byte) {
+	this.SetHeader("Content-Type", http.DetectContentType(content))
+	if EnableGzip {
+		if strings.Contains(this.Request.Header.Get("Accept-Encoding"), "gzip") {
+			this.SetHeader("Content-Encoding", "gzip")
+			buf := new(bytes.Buffer)
+			gz := gzip.NewWriter(buf)
+			gz.Write(content)
+			gz.Close()
+			content = buf.Bytes()
+		}
+	}
+	this.Response.Write(content)
 }
 
 func (this *xgoContext) Abort(status int, content string) {
@@ -21,13 +38,13 @@ func (this *xgoContext) Abort(status int, content string) {
 	this.WriteString(content)
 }
 
-func (this *xgoContext) RedirectUrl(status int, url string) {
+func (this *xgoContext) Redirect(status int, url string) {
 	this.SetHeader("Location", url)
 	this.Response.WriteHeader(status)
 }
 
-func (this *xgoContext) Redirect(url string) {
-	this.RedirectUrl(302, url)
+func (this *xgoContext) RedirectUrl(url string) {
+	this.Redirect(302, url)
 }
 
 func (this *xgoContext) NotModified() {
