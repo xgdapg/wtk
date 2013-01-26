@@ -5,7 +5,7 @@ import (
 )
 
 type xgoControllerInterface interface {
-	Init(*xgoContext, *xgoTemplate, *xgoSession, string)
+	Init(*xgoApp, *xgoContext, *xgoTemplate, *xgoSession, string)
 	Get()
 	Post()
 	Delete()
@@ -18,15 +18,20 @@ type xgoControllerInterface interface {
 }
 
 type Controller struct {
+	app      *xgoApp
 	Context  *xgoContext
 	Template *xgoTemplate
 	Session  *xgoSession
 }
 
-func (this *Controller) Init(ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
+func (this *Controller) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
+	this.app = app
 	this.Context = ctx
+	this.Context.ctlr = this
 	this.Template = tpl
+	this.Template.ctlr = this
 	this.Session = sess
+	this.Session.ctlr = this
 }
 
 func (this *Controller) Get() {
@@ -63,4 +68,12 @@ func (this *Controller) Render() {
 
 func (this *Controller) Output() {
 	this.Context.WriteBytes(this.Template.GetResult())
+}
+
+func (this *Controller) getHookController() *HookController {
+	return &HookController{
+		Context:  this.Context,
+		Template: this.Template,
+		Session:  this.Session,
+	}
 }

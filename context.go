@@ -10,8 +10,14 @@ import (
 )
 
 type xgoContext struct {
-	Response http.ResponseWriter
+	ctlr     *Controller
+	Response *xgoResponseWriter
 	Request  *http.Request
+}
+
+func (this *xgoContext) Finish() {
+	this.Response.Finished = true
+	this.Response.Close()
 }
 
 func (this *xgoContext) WriteString(content string) {
@@ -19,6 +25,15 @@ func (this *xgoContext) WriteString(content string) {
 }
 
 func (this *xgoContext) WriteBytes(content []byte) {
+	if this.Response.Closed {
+		return
+	}
+	hc := this.ctlr.getHookController()
+	this.ctlr.app.Hook.CallControllerHook("BeforeOutput", hc)
+	if this.Response.Finished {
+		return
+	}
+
 	this.SetHeader("Content-Type", http.DetectContentType(content))
 	if EnableGzip {
 		if strings.Contains(this.Request.Header.Get("Accept-Encoding"), "gzip") {
@@ -31,6 +46,12 @@ func (this *xgoContext) WriteBytes(content []byte) {
 		}
 	}
 	this.Response.Write(content)
+
+	this.ctlr.app.Hook.CallControllerHook("AfterOutput", hc)
+	if this.Response.Finished {
+		return
+	}
+	this.Finish()
 }
 
 func (this *xgoContext) Abort(status int, content string) {
@@ -41,6 +62,7 @@ func (this *xgoContext) Abort(status int, content string) {
 func (this *xgoContext) Redirect(status int, url string) {
 	this.SetHeader("Location", url)
 	this.Response.WriteHeader(status)
+	this.Finish()
 }
 
 func (this *xgoContext) RedirectUrl(url string) {
@@ -49,11 +71,13 @@ func (this *xgoContext) RedirectUrl(url string) {
 
 func (this *xgoContext) NotModified() {
 	this.Response.WriteHeader(304)
+	this.Finish()
 }
 
 func (this *xgoContext) NotFound(content string) {
 	this.Response.WriteHeader(404)
 	this.WriteString(content)
+	this.Finish()
 }
 
 func (this *xgoContext) SetHeader(name string, value string) {

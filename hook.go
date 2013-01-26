@@ -33,7 +33,7 @@ type HookController struct {
 	Session  *xgoSession
 }
 
-type HookControllerFunc func(string, *HookController)
+type HookControllerFunc func(*HookController)
 
 func (this *xgoHook) AddControllerHook(event string, hookFunc HookControllerFunc) {
 	if this.controllerHooks == nil {
@@ -45,11 +45,11 @@ func (this *xgoHook) AddControllerHook(event string, hookFunc HookControllerFunc
 	this.controllerHooks[event] = append(this.controllerHooks[event], hookFunc)
 }
 
-func (this *xgoHook) CallControllerHook(event string, url string, hc *HookController) {
+func (this *xgoHook) CallControllerHook(event string, hc *HookController) {
 	if funcList, ok := this.controllerHooks[event]; ok {
 		for _, hookFunc := range funcList {
-			hookFunc(url, hc)
-			if hc.Context.Response.(*xgoResponseWriter).HasOutput {
+			hookFunc(hc)
+			if hc.Context.Response.Finished {
 				return
 			}
 		}

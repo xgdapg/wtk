@@ -16,6 +16,7 @@ func AddTemplateFunc(name string, tplFunc interface{}) {
 }
 
 type xgoTemplate struct {
+	ctlr      *Controller
 	tpl       *template.Template
 	tplVars   map[string]interface{}
 	tplResult *xgoTemplateResult
@@ -63,12 +64,21 @@ func (this *xgoTemplate) Parse() bool {
 	if this.tplResult != nil {
 		return false
 	}
+
+	hc := this.ctlr.getHookController()
+	this.ctlr.app.Hook.CallControllerHook("BeforeRender", hc)
+	if this.ctlr.Context.Response.Finished {
+		return true
+	}
+
 	this.tplResult = &xgoTemplateResult{data: []byte{}}
 	this.tpl.Funcs(tplFuncMap)
 	err := this.tpl.Execute(this.tplResult, this.tplVars)
 	if err != nil {
 		return false
 	}
+
+	this.ctlr.app.Hook.CallControllerHook("AfterRender", hc)
 	return true
 }
 
@@ -83,6 +93,17 @@ func (this xgoTemplate) GetResultString() string {
 	return string(this.GetResult())
 }
 
+func (this *xgoTemplate) SetResult(p []byte) {
+	if this.tplResult == nil {
+		return
+	}
+	this.tplResult.SetBytes(p)
+}
+
+func (this *xgoTemplate) SetResultString(s string) {
+	this.SetResult([]byte(s))
+}
+
 type xgoTemplateResult struct {
 	data []byte
 }
@@ -90,6 +111,10 @@ type xgoTemplateResult struct {
 func (this *xgoTemplateResult) Write(p []byte) (n int, err error) {
 	this.data = append(this.data, p...)
 	return len(p), nil
+}
+
+func (this *xgoTemplateResult) SetBytes(p []byte) {
+	this.data = p
 }
 
 func (this *xgoTemplateResult) String() string {

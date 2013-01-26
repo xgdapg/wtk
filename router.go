@@ -10,8 +10,9 @@ import (
 )
 
 type xgoResponseWriter struct {
-	writer    http.ResponseWriter
-	HasOutput bool
+	writer   http.ResponseWriter
+	Closed   bool
+	Finished bool
 }
 
 func (this *xgoResponseWriter) Header() http.Header {
@@ -19,13 +20,22 @@ func (this *xgoResponseWriter) Header() http.Header {
 }
 
 func (this *xgoResponseWriter) Write(p []byte) (int, error) {
-	this.HasOutput = true
 	return this.writer.Write(p)
 }
 
 func (this *xgoResponseWriter) WriteHeader(code int) {
-	this.HasOutput = true
 	this.writer.WriteHeader(code)
+}
+
+func (this *xgoResponseWriter) Close() {
+	this.Closed = true
+	rwc, buf, _ := this.writer.(http.Hijacker).Hijack()
+	if buf != nil {
+		buf.Flush()
+	}
+	if rwc != nil {
+		rwc.Close()
+	}
 }
 
 type xgoRoutingRule struct {
@@ -102,8 +112,9 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// }()
 
 	w := &xgoResponseWriter{
-		writer:    rw,
-		HasOutput: false,
+		writer:   rw,
+		Closed:   false,
+		Finished: false,
 	}
 	var routingRule *xgoRoutingRule
 	urlPath := r.URL.Path
@@ -163,22 +174,25 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	ci := reflect.New(routingRule.ControllerType).Interface()
 	ctx := &xgoContext{
+		ctlr:     nil,
 		Response: w,
 		Request:  r,
 	}
 	tpl := &xgoTemplate{
+		ctlr:      nil,
 		tpl:       nil,
 		tplVars:   make(map[string]interface{}),
 		tplResult: nil,
 	}
 	sess := &xgoSession{
+		ctlr:           nil,
 		sessionManager: this.app.Session,
 		sessionId:      ctx.GetCookie(SessionName),
 		ctx:            ctx,
 		data:           nil,
 	}
-	util.CallMethod(ci, "Init", ctx, tpl, sess, routingRule.ControllerType.Name())
-	if w.HasOutput {
+	util.CallMethod(ci, "Init", this.app, ctx, tpl, sess, routingRule.ControllerType.Name())
+	if w.Finished {
 		return
 	}
 
@@ -188,8 +202,8 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Session:  sess,
 	}
 
-	this.app.Hook.CallControllerHook("AfterInit", urlPath, hc)
-	if w.HasOutput {
+	this.app.Hook.CallControllerHook("AfterInit", hc)
+	if w.Finished {
 		return
 	}
 
@@ -213,48 +227,28 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.Hook.CallControllerHook("BeforeMethod"+r.Method, urlPath, hc)
-	if w.HasOutput {
+	this.app.Hook.CallControllerHook("BeforeMethod"+r.Method, hc)
+	if w.Finished {
 		return
 	}
 
 	util.CallMethod(ci, method)
-	if w.HasOutput {
+	if w.Finished {
 		return
 	}
 
-	this.app.Hook.CallControllerHook("AfterMethod"+r.Method, urlPath, hc)
-	if w.HasOutput {
-		return
-	}
-
-	this.app.Hook.CallControllerHook("BeforeRender", urlPath, hc)
-	if w.HasOutput {
+	this.app.Hook.CallControllerHook("AfterMethod"+r.Method, hc)
+	if w.Finished {
 		return
 	}
 
 	util.CallMethod(ci, "Render")
-	if w.HasOutput {
-		return
-	}
-
-	this.app.Hook.CallControllerHook("AfterRender", urlPath, hc)
-	if w.HasOutput {
-		return
-	}
-
-	this.app.Hook.CallControllerHook("BeforeOutput", urlPath, hc)
-	if w.HasOutput {
+	if w.Finished {
 		return
 	}
 
 	util.CallMethod(ci, "Output")
-	if w.HasOutput {
-		return
-	}
-
-	this.app.Hook.CallControllerHook("AfterOutput", urlPath, hc)
-	if w.HasOutput {
+	if w.Finished {
 		return
 	}
 }
