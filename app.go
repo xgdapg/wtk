@@ -9,38 +9,38 @@ import (
 )
 
 type xgoApp struct {
-	router  *xgoRouter
-	hook    *xgoHook
-	session *xgoSessionManager
+	Router  *xgoRouter
+	Hook    *xgoHook
+	Session *xgoSessionManager
 }
 
 func (this *xgoApp) init() *xgoApp {
-	this.router = &xgoRouter{
+	this.Router = &xgoRouter{
 		app:         this,
 		Rules:       []*xgoRoutingRule{},
 		StaticRules: []*xgoRoutingRule{},
 		StaticDir:   make(map[string]string),
 	}
-	this.hook = &xgoHook{app: this}
-	this.session = new(xgoSessionManager)
-	this.session.RegisterStorage(new(xgoDefaultSessionStorage))
+	this.Hook = &xgoHook{app: this}
+	this.Session = new(xgoSessionManager)
+	this.Session.RegisterStorage(new(xgoDefaultSessionStorage))
 	return this
 }
 
 func (this *xgoApp) RegisterController(pattern string, c xgoControllerInterface) {
-	this.router.AddRule(pattern, c)
+	this.Router.AddRule(pattern, c)
 }
 
-func (this *xgoApp) RegisterControllerHook(event string, hookFunc xgoControllerHookFunc) {
-	this.hook.AddControllerHook(event, hookFunc)
+func (this *xgoApp) RegisterControllerHook(event string, hookFunc HookControllerFunc) {
+	this.Hook.AddControllerHook(event, hookFunc)
 }
 
 func (this *xgoApp) SetStaticPath(sPath, fPath string) {
-	this.router.SetStaticPath(sPath, fPath)
+	this.Router.SetStaticPath(sPath, fPath)
 }
 
-func (this *xgoApp) RegisterSessionStorage(storage xgoSessionStorageInterface) {
-	this.session.RegisterStorage(storage)
+func (this *xgoApp) RegisterSessionStorage(storage SessionStorageInterface) {
+	this.Session.RegisterStorage(storage)
 }
 
 func (this *xgoApp) Run(mode string, addr string, port int) {
@@ -48,15 +48,15 @@ func (this *xgoApp) Run(mode string, addr string, port int) {
 	var err error
 	switch mode {
 	case "http":
-		err = http.ListenAndServe(listenAddr, this.router)
+		err = http.ListenAndServe(listenAddr, this.Router)
 	case "fcgi":
 		l, e := net.Listen("tcp", listenAddr)
 		if e != nil {
 			panic("Fcgi listen error: " + e.Error())
 		}
-		err = fcgi.Serve(l, this.router)
+		err = fcgi.Serve(l, this.Router)
 	default:
-		err = http.ListenAndServe(listenAddr, this.router)
+		err = http.ListenAndServe(listenAddr, this.Router)
 	}
 	if err != nil {
 		panic("ListenAndServe error: " + err.Error())

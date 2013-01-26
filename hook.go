@@ -1,8 +1,30 @@
 package xgo
 
+const (
+	HookEventAfterInit           = "AfterInit"
+	HookEventBeforeMethodGet     = "BeforeMethodGet"
+	HookEventAfterMethodGet      = "AfterMethodGet"
+	HookEventBeforeMethodPost    = "BeforeMethodPost"
+	HookEventAfterMethodPost     = "AfterMethodPost"
+	HookEventBeforeMethodHead    = "BeforeMethodHead"
+	HookEventAfterMethodHead     = "AfterMethodHead"
+	HookEventBeforeMethodDelete  = "BeforeMethodDelete"
+	HookEventAfterMethodDelete   = "AfterMethodDelete"
+	HookEventBeforeMethodPut     = "BeforeMethodPut"
+	HookEventAfterMethodPut      = "AfterMethodPut"
+	HookEventBeforeMethodPatch   = "BeforeMethodPatch"
+	HookEventAfterMethodPatch    = "AfterMethodPatch"
+	HookEventBeforeMethodOptions = "BeforeMethodOptions"
+	HookEventAfterMethodOptions  = "AfterMethodOptions"
+	HookEventBeforeRender        = "BeforeRender"
+	HookEventAfterRender         = "AfterRender"
+	HookEventBeforeOutput        = "BeforeOutput"
+	HookEventAfterOutput         = "AfterOutput"
+)
+
 type xgoHook struct {
 	app             *xgoApp
-	controllerHooks map[string][]xgoControllerHookFunc
+	controllerHooks map[string][]HookControllerFunc
 }
 
 type HookController struct {
@@ -11,14 +33,14 @@ type HookController struct {
 	Session  *xgoSession
 }
 
-type xgoControllerHookFunc func(string, *HookController)
+type HookControllerFunc func(string, *HookController)
 
-func (this *xgoHook) AddControllerHook(event string, hookFunc xgoControllerHookFunc) {
+func (this *xgoHook) AddControllerHook(event string, hookFunc HookControllerFunc) {
 	if this.controllerHooks == nil {
-		this.controllerHooks = make(map[string][]xgoControllerHookFunc)
+		this.controllerHooks = make(map[string][]HookControllerFunc)
 	}
 	if _, ok := this.controllerHooks[event]; !ok {
-		this.controllerHooks[event] = []xgoControllerHookFunc{}
+		this.controllerHooks[event] = []HookControllerFunc{}
 	}
 	this.controllerHooks[event] = append(this.controllerHooks[event], hookFunc)
 }

@@ -134,7 +134,11 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if !rule.Regexp.MatchString(urlPath) {
 				continue
 			}
-			matches := rule.Regexp.FindStringSubmatch(urlPath)[1:]
+			matches := rule.Regexp.FindStringSubmatch(urlPath)
+			if matches[0] != urlPath {
+				continue
+			}
+			matches = matches[1:]
 			paramCnt := len(rule.Params)
 			if paramCnt != len(matches) {
 				continue
@@ -168,7 +172,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		tplResult: nil,
 	}
 	sess := &xgoSession{
-		sessionManager: this.app.session,
+		sessionManager: this.app.Session,
 		sessionId:      ctx.GetCookie(SessionName),
 		ctx:            ctx,
 		data:           nil,
@@ -184,7 +188,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Session:  sess,
 	}
 
-	this.app.hook.CallControllerHook("AfterInit", urlPath, hc)
+	this.app.Hook.CallControllerHook("AfterInit", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -209,7 +213,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.hook.CallControllerHook("Before"+r.Method, urlPath, hc)
+	this.app.Hook.CallControllerHook("BeforeMethod"+r.Method, urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -219,12 +223,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallControllerHook("After"+r.Method, urlPath, hc)
+	this.app.Hook.CallControllerHook("AfterMethod"+r.Method, urlPath, hc)
 	if w.HasOutput {
 		return
 	}
 
-	this.app.hook.CallControllerHook("BeforeRender", urlPath, hc)
+	this.app.Hook.CallControllerHook("BeforeRender", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -234,12 +238,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallControllerHook("AfterRender", urlPath, hc)
+	this.app.Hook.CallControllerHook("AfterRender", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
 
-	this.app.hook.CallControllerHook("BeforeOutput", urlPath, hc)
+	this.app.Hook.CallControllerHook("BeforeOutput", urlPath, hc)
 	if w.HasOutput {
 		return
 	}
@@ -249,7 +253,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.hook.CallControllerHook("AfterOutput", urlPath, hc)
+	this.app.Hook.CallControllerHook("AfterOutput", urlPath, hc)
 	if w.HasOutput {
 		return
 	}

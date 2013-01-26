@@ -42,11 +42,15 @@ func NewApp() *xgoApp {
 	return new(xgoApp).init()
 }
 
+func GetMainApp() *xgoApp {
+	return app
+}
+
 func RegisterController(pattern string, c xgoControllerInterface) {
 	app.RegisterController(pattern, c)
 }
 
-func RegisterControllerHook(event string, hookFunc xgoControllerHookFunc) {
+func RegisterControllerHook(event string, hookFunc HookControllerFunc) {
 	app.RegisterControllerHook(event, hookFunc)
 }
 
@@ -54,7 +58,7 @@ func SetStaticPath(sPath, fPath string) {
 	app.SetStaticPath(sPath, fPath)
 }
 
-func RegisterSessionStorage(storage xgoSessionStorageInterface) {
+func RegisterSessionStorage(storage SessionStorageInterface) {
 	app.RegisterSessionStorage(storage)
 }
 

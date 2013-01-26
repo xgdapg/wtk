@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type xgoSessionStorageInterface interface {
+type SessionStorageInterface interface {
 	Init(int64)
 	CreateSessionID() string
 	Set(string, map[string]string)
@@ -14,11 +14,11 @@ type xgoSessionStorageInterface interface {
 }
 
 type xgoSessionManager struct {
-	sessionStorage xgoSessionStorageInterface
+	sessionStorage SessionStorageInterface
 	inited         bool
 }
 
-func (this *xgoSessionManager) RegisterStorage(storage xgoSessionStorageInterface) {
+func (this *xgoSessionManager) RegisterStorage(storage SessionStorageInterface) {
 	if storage == nil {
 		return
 	}
