@@ -66,7 +66,7 @@ func (this *xgoTemplate) Parse() bool {
 	}
 
 	hc := this.ctlr.getHookController()
-	this.ctlr.app.Hook.CallControllerHook("BeforeRender", hc)
+	this.ctlr.app.callControllerHook("BeforeRender", hc)
 	if this.ctlr.Context.Response.Finished {
 		return true
 	}
@@ -78,7 +78,7 @@ func (this *xgoTemplate) Parse() bool {
 		return false
 	}
 
-	this.ctlr.app.Hook.CallControllerHook("AfterRender", hc)
+	this.ctlr.app.callControllerHook("AfterRender", hc)
 	return true
 }
 

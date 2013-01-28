@@ -29,7 +29,7 @@ func (this *xgoContext) WriteBytes(content []byte) {
 		return
 	}
 	hc := this.ctlr.getHookController()
-	this.ctlr.app.Hook.CallControllerHook("BeforeOutput", hc)
+	this.ctlr.app.callControllerHook("BeforeOutput", hc)
 	if this.Response.Finished {
 		return
 	}
@@ -47,7 +47,7 @@ func (this *xgoContext) WriteBytes(content []byte) {
 	}
 	this.Response.Write(content)
 
-	this.ctlr.app.Hook.CallControllerHook("AfterOutput", hc)
+	this.ctlr.app.callControllerHook("AfterOutput", hc)
 	if this.Response.Finished {
 		return
 	}

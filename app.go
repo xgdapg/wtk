@@ -9,38 +9,53 @@ import (
 )
 
 type xgoApp struct {
-	Router  *xgoRouter
-	Hook    *xgoHook
-	Session *xgoSessionManager
+	router *xgoRouter
+	hook   *xgoHook
+	// extHook *xgoHook
+	session *xgoSessionManager
 }
 
 func (this *xgoApp) init() *xgoApp {
-	this.Router = &xgoRouter{
+	this.router = &xgoRouter{
 		app:         this,
 		Rules:       []*xgoRoutingRule{},
 		StaticRules: []*xgoRoutingRule{},
 		StaticDir:   make(map[string]string),
 	}
-	this.Hook = &xgoHook{app: this}
-	this.Session = new(xgoSessionManager)
-	this.Session.RegisterStorage(new(xgoDefaultSessionStorage))
+	this.hook = &xgoHook{app: this}
+	// this.extHook = &xgoHook{app: this}
+	this.session = new(xgoSessionManager)
+	this.session.RegisterStorage(new(xgoDefaultSessionStorage))
 	return this
 }
 
 func (this *xgoApp) RegisterController(pattern string, c xgoControllerInterface) {
-	this.Router.AddRule(pattern, c)
+	this.router.AddRule(pattern, c)
 }
 
 func (this *xgoApp) RegisterControllerHook(event string, hookFunc HookControllerFunc) {
-	this.Hook.AddControllerHook(event, hookFunc)
+	this.hook.AddControllerHook(event, hookFunc)
 }
 
+func (this *xgoApp) callControllerHook(event string, hc *HookController) {
+	this.hook.CallControllerHook(event, hc)
+	// this.extHook.CallControllerHook(event, hc)
+}
+
+// func (this *xgoApp) registerAddonControllerHook(event string, hookFunc HookControllerFunc) {
+// 	this.extHook.AddControllerHook(event, hookFunc)
+// }
+
+// func (this *xgoApp) clearExtHook(event string, hookFunc HookControllerFunc) {
+// 	this.extHook = &xgoHook{app: this}
+// }
+
 func (this *xgoApp) SetStaticPath(sPath, fPath string) {
-	this.Router.SetStaticPath(sPath, fPath)
+	this.router.SetStaticPath(sPath, fPath)
 }
 
 func (this *xgoApp) RegisterSessionStorage(storage SessionStorageInterface) {
-	this.Session.RegisterStorage(storage)
+	this.session.RegisterStorage(storage)
 }
 
 func (this *xgoApp) Run(mode string, addr string, port int) {
@@ -48,15 +63,15 @@ func (this *xgoApp) Run(mode string, addr string, port int) {
 	var err error
 	switch mode {
 	case "http":
-		err = http.ListenAndServe(listenAddr, this.Router)
+		err = http.ListenAndServe(listenAddr, this.router)
 	case "fcgi":
 		l, e := net.Listen("tcp", listenAddr)
 		if e != nil {
 			panic("Fcgi listen error: " + e.Error())
 		}
-		err = fcgi.Serve(l, this.Router)
+		err = fcgi.Serve(l, this.router)
 	default:
-		err = http.ListenAndServe(listenAddr, this.Router)
+		err = http.ListenAndServe(listenAddr, this.router)
 	}
 	if err != nil {
 		panic("ListenAndServe error: " + err.Error())

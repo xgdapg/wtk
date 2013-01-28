@@ -186,7 +186,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	sess := &xgoSession{
 		ctlr:           nil,
-		sessionManager: this.app.Session,
+		sessionManager: this.app.session,
 		sessionId:      ctx.GetCookie(SessionName),
 		ctx:            ctx,
 		data:           nil,
@@ -202,7 +202,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Session:  sess,
 	}
 
-	this.app.Hook.CallControllerHook("AfterInit", hc)
+	this.app.callControllerHook("AfterInit", hc)
 	if w.Finished {
 		return
 	}
@@ -227,7 +227,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.Hook.CallControllerHook("BeforeMethod"+r.Method, hc)
+	this.app.callControllerHook("BeforeMethod"+r.Method, hc)
 	if w.Finished {
 		return
 	}
@@ -237,7 +237,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.Hook.CallControllerHook("AfterMethod"+r.Method, hc)
+	this.app.callControllerHook("AfterMethod"+r.Method, hc)
 	if w.Finished {
 		return
 	}
