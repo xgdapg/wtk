@@ -62,6 +62,10 @@ func RegisterSessionStorage(storage SessionStorageInterface) {
 	app.RegisterSessionStorage(storage)
 }
 
+func RegisterCustomHttpStatus(code int, filePath string) {
+	app.RegisterCustomHttpStatus(code, filePath)
+}
+
 func Run() {
 	if EnableDaemon {
 		util.CallMethod(&util, "SetDaemonMode", 1, 0)

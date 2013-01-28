@@ -74,9 +74,8 @@ func (this *xgoContext) NotModified() {
 	this.Finish()
 }
 
-func (this *xgoContext) NotFound(content string) {
+func (this *xgoContext) NotFound() {
 	this.Response.WriteHeader(404)
-	this.WriteString(content)
 	this.Finish()
 }
 

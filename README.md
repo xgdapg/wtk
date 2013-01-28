@@ -32,6 +32,9 @@ func main() {
 			c.Template.SetResultString(c.Template.GetResultString() + "<div>append a footer</div>")
 		}
 	})
+	// 注册自定义404显示页面
+	// Register a custom 404 page
+	xgo.RegisterCustomHttpStatus(404, "notfound.html")
 	xgo.Run()
 }
 

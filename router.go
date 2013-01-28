@@ -4,12 +4,14 @@ import (
 	"errors"
 	"net/http"
 	// "net/url"
+	"io/ioutil"
 	"reflect"
 	"regexp"
 	"strings"
 )
 
 type xgoResponseWriter struct {
+	app      *xgoApp
 	writer   http.ResponseWriter
 	Closed   bool
 	Finished bool
@@ -20,11 +22,22 @@ func (this *xgoResponseWriter) Header() http.Header {
 }
 
 func (this *xgoResponseWriter) Write(p []byte) (int, error) {
+	if this.Closed {
+		return 0, nil
+	}
 	return this.writer.Write(p)
 }
 
 func (this *xgoResponseWriter) WriteHeader(code int) {
 	this.writer.WriteHeader(code)
+	if filepath, ok := app.customHttpStatus[code]; ok {
+		content, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			content = []byte(http.StatusText(code))
+		}
+		this.writer.Write(content)
+		this.Close()
+	}
 }
 
 func (this *xgoResponseWriter) Close() {
@@ -112,6 +125,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// }()
 
 	w := &xgoResponseWriter{
+		app:      this.app,
 		writer:   rw,
 		Closed:   false,
 		Finished: false,

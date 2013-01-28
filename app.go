@@ -9,10 +9,11 @@ import (
 )
 
 type xgoApp struct {
-	router *xgoRouter
-	hook   *xgoHook
+	router           *xgoRouter
+	hook             *xgoHook
+	session          *xgoSessionManager
+	customHttpStatus map[int]string
 	// extHook *xgoHook
-	session *xgoSessionManager
 }
 
 func (this *xgoApp) init() *xgoApp {
@@ -26,6 +27,7 @@ func (this *xgoApp) init() *xgoApp {
 	// this.extHook = &xgoHook{app: this}
 	this.session = new(xgoSessionManager)
 	this.session.RegisterStorage(new(xgoDefaultSessionStorage))
+	this.customHttpStatus = make(map[int]string)
 	return this
 }
 
@@ -56,6 +58,10 @@ func (this *xgoApp) SetStaticPath(sPath, fPath string) {
 
 func (this *xgoApp) RegisterSessionStorage(storage SessionStorageInterface) {
 	this.session.RegisterStorage(storage)
+}
+
+func (this *xgoApp) RegisterCustomHttpStatus(code int, filePath string) {
+	this.customHttpStatus[code] = filePath
 }
 
 func (this *xgoApp) Run(mode string, addr string, port int) {
