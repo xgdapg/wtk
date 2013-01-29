@@ -27,7 +27,7 @@ func main() {
 	xgo.RegisterController("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PostController{})
 	// 注册一个钩子，当模板解析完成时会回调钩子函数进行处理。
 	// Register a hook, and while the template has been parsed, the hook will be called.
-	xgo.RegisterControllerHook(xgo.HookEventAfterRender, func(c *xgo.HookController) {
+	xgo.RegisterControllerHook(xgo.HookAfterRender, func(c *xgo.HookController) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/post") {
 			c.Template.SetResultString(c.Template.GetResultString() + "<div>append a footer</div>")
 		}
@@ -64,3 +64,5 @@ func (this *PostController) Get() {
 	this.Template.SetTemplateFile("post.tpl")
 }
 ```
+## TODO
+============
