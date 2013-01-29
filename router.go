@@ -29,6 +29,9 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 }
 
 func (this *xgoResponseWriter) WriteHeader(code int) {
+	if this.Closed {
+		return
+	}
 	this.writer.WriteHeader(code)
 	if filepath, ok := app.customHttpStatus[code]; ok {
 		content, err := ioutil.ReadFile(filepath)
@@ -42,13 +45,6 @@ func (this *xgoResponseWriter) WriteHeader(code int) {
 
 func (this *xgoResponseWriter) Close() {
 	this.Closed = true
-	rwc, buf, _ := this.writer.(http.Hijacker).Hijack()
-	if buf != nil {
-		buf.Flush()
-	}
-	if rwc != nil {
-		rwc.Close()
-	}
 }
 
 type xgoRoutingRule struct {
@@ -241,7 +237,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.callControllerHook("BeforeMethod"+r.Method, hc)
+	this.app.callControllerHook("BeforeMethod"+method, hc)
 	if w.Finished {
 		return
 	}
@@ -251,7 +247,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.callControllerHook("AfterMethod"+r.Method, hc)
+	this.app.callControllerHook("AfterMethod"+method, hc)
 	if w.Finished {
 		return
 	}

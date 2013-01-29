@@ -54,12 +54,13 @@ func (this *xgoContext) WriteBytes(content []byte) {
 	if this.Response.Finished {
 		return
 	}
-	this.Finish()
+	this.Response.Close()
 }
 
 func (this *xgoContext) Abort(status int, content string) {
 	this.Response.WriteHeader(status)
 	this.WriteString(content)
+	this.Finish()
 }
 
 func (this *xgoContext) Redirect(status int, url string) {

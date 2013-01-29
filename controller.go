@@ -67,7 +67,10 @@ func (this *Controller) Render() {
 }
 
 func (this *Controller) Output() {
-	this.Context.WriteBytes(this.Template.GetResult())
+	content := this.Template.GetResult()
+	if len(content) > 0 {
+		this.Context.WriteBytes(content)
+	}
 }
 
 func (this *Controller) getHookController() *HookController {
