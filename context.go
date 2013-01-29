@@ -3,8 +3,11 @@ package xgo
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
+	"io/ioutil"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -119,6 +122,48 @@ func (this *xgoContext) GetCookie(name string) string {
 		return ""
 	}
 	return cookie.Value
+}
+
+func (this *xgoContext) SetSecureCookie(name string, value string, expires int64) {
+	var buf bytes.Buffer
+	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
+	encoder.Write([]byte(value))
+	encoder.Close()
+	vs := buf.String()
+	ts := "0"
+	if expires > 0 {
+		d := time.Duration(expires) * time.Second
+		ts = strconv.FormatInt(time.Now().Add(d).Unix(), 10)
+	}
+
+	sig := util.getCookieSig(CookieSecret, name, vs, ts)
+	cookie := strings.Join([]string{vs, ts, sig}, "|")
+	this.SetCookie(name, cookie, expires)
+}
+
+func (this *xgoContext) GetSecureCookie(name string) string {
+	value := this.GetCookie(name)
+	if value == "" {
+		return ""
+	}
+	parts := strings.SplitN(value, "|", 3)
+	if len(parts) != 3 {
+		return ""
+	}
+	val := parts[0]
+	timestamp := parts[1]
+	sig := parts[2]
+	if util.getCookieSig(CookieSecret, name, val, timestamp) != sig {
+		return ""
+	}
+	ts, _ := strconv.ParseInt(timestamp, 0, 64)
+	if ts > 0 && time.Now().Unix() > ts {
+		return ""
+	}
+	buf := bytes.NewBufferString(val)
+	encoder := base64.NewDecoder(base64.StdEncoding, buf)
+	res, _ := ioutil.ReadAll(encoder)
+	return string(res)
 }
 
 func (this *xgoContext) GetParam(name string) string {

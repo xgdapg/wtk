@@ -14,6 +14,7 @@ var (
 	RunMode      string = "http"
 	EnableDaemon bool   = false
 	EnableStats  bool   = true
+	CookieSecret string = "foobar"
 	SessionName  string = "XGOSESSID"
 	SessionTTL   int64  = 60 * 15
 	EnablePprof  bool   = true

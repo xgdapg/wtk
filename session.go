@@ -64,7 +64,7 @@ type xgoSession struct {
 func (this *xgoSession) init() {
 	if this.sessionId == "" {
 		this.sessionId = this.sessionManager.CreateSessionID()
-		this.ctx.SetCookie(SessionName, this.sessionId, 0)
+		this.ctx.SetSecureCookie(SessionName, this.sessionId, 0)
 	}
 	if this.data == nil {
 		this.data = this.sessionManager.Get(this.sessionId)

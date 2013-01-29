@@ -201,7 +201,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	sess := &xgoSession{
 		ctlr:           nil,
 		sessionManager: this.app.session,
-		sessionId:      ctx.GetCookie(SessionName),
+		sessionId:      ctx.GetSecureCookie(SessionName),
 		ctx:            ctx,
 		data:           nil,
 	}
