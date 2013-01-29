@@ -26,6 +26,13 @@ func (this *xgoTemplate) SetVar(name string, value interface{}) {
 	this.tplVars[name] = value
 }
 
+func (this *xgoTemplate) GetVar(name string) interface{} {
+	if val, ok := this.tplVars[name]; ok {
+		return val
+	}
+	return nil
+}
+
 func (this *xgoTemplate) SetTemplateString(str string) bool {
 	this.tpl = template.New("")
 	this.tpl.Parse(str)
