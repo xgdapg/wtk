@@ -4,9 +4,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
+	"errors"
+	"io"
 	"io/ioutil"
 	"mime"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -169,4 +174,49 @@ func (this *xgoContext) GetSecureCookie(name string) string {
 
 func (this *xgoContext) GetParam(name string) string {
 	return this.Request.Form.Get(name)
+}
+
+func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
+	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
+		return nil, errors.New("Incorrect method: " + this.Request.Method)
+	}
+	err := this.Request.ParseMultipartForm(0)
+	if err != nil {
+		return nil, err
+	}
+	if this.Request.MultipartForm != nil && this.Request.MultipartForm.File != nil {
+		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
+			uploadFile := &xgoUploadFile{
+				Filename:   fhs[0].Filename,
+				Header:     fhs[0].Header,
+				fileHeader: fhs[0],
+			}
+			return uploadFile, nil
+		}
+	}
+	return nil, http.ErrMissingFile
+}
+
+type xgoUploadFile struct {
+	Filename   string
+	Header     textproto.MIMEHeader
+	fileHeader *multipart.FileHeader
+}
+
+func (this *xgoUploadFile) SaveFile(savePath string) error {
+	file, err := this.fileHeader.Open()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	f, err := os.OpenFile(savePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, file)
+	if err != nil {
+		return err
+	}
+	return nil
 }
