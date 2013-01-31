@@ -89,11 +89,13 @@ If you are using fcgi mode behind a web server like nginx that also uses gzip, y
 You can set the values of all the variables above in a config file.  
 By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
 The config file format is like this:  
+
 	ListenAddr=""
 	ListenPort=8080
 	CustomConfigKey=some value
 	...
 As you see, you can also add some custom keys to config file, and fetch them with
+
 	xgo.GetConfig("CustomConfigKey").String()
 the value can be converted to Int,Float64,Bool too.
 ## Ending
