@@ -64,5 +64,39 @@ func (this *PostController) Get() {
 	this.Template.SetTemplateFile("post.tpl")
 }
 ```
-## TODO
+## Variables
 ============
+#### ListenAddr
+App listening address. (default: "")
+#### ListenPort
+App listening port. (default: 80) 
+#### RunMode
+Options: http,fcgi. (default: http)
+#### EnableDaemon
+An experimental option. (default: false)  
+While it is set to true, the app will be running in background. Linux only.
+#### CookieSecret
+Secret key for secure cookie. (default: "foobar")  
+Set it to a different string if you are to use secret cookie or session.
+#### SessionName
+The session id is stored in cookie named with SessionName. (default: "XGOSESSID")
+#### SessionTTL
+The session live time in server side. Any operation with the session will reset the time. (default: 900)
+#### EnableGzip
+Enable to compress the content that send to browser with gzip. (default: true)  
+If you are using fcgi mode behind a web server like nginx that also uses gzip, you may need to set EnableGzip to false.
+## Config
+You can set the values of all the variables above in a config file.  
+By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
+The config file format is like this:  
+	ListenAddr=""
+	ListenPort=8080
+	CustomConfigKey=some value
+	...
+As you see, you can also add some custom keys to config file, and fetch them with
+	xgo.GetConfig("CustomConfigKey").String()
+the value can be converted to Int,Float64,Bool too.
+## Ending
+============
+To be continued.  
+And sorry for my bad English.
