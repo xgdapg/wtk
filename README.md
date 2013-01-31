@@ -102,7 +102,6 @@ Xgo provides hook to control the request and response out of controller.
 For example, if we want a user authorization in every admin page, we can register a hook like this:
 
 	xgo.RegisterControllerHook(xgo.HookAfterInit, func(c *xgo.HookController) {
-		c.Template.SetVar("Subb", "Hook edit Subb, url:"+url)
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
 			succ := checkUser()
 			if !succ {
@@ -139,7 +138,7 @@ It is usually very useful to have a custom 404 page. In xgo, we can register a 4
 	xgo.RegisterCustomHttpStatus(404, "notfound.html")
 or other http status code, for example, 403
 
-	xgo.RegisterCustomHttpStatus(403, "forbidden .html")
+	xgo.RegisterCustomHttpStatus(403, "forbidden.html")
 
 ## .
 To be continued.  
