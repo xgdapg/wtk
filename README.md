@@ -73,13 +73,13 @@ An experimental option. (default: false)
 While it is set to true, the app will be running in background. Linux only.
 #### CookieSecret
 Secret key for secure cookie. (default: "foobar")  
-Set it to a different string if you are to use secret cookie or session.
+Set it to a different string if you want to use secret cookie or session.
 #### SessionName
 The session id is stored in cookie named with SessionName. (default: "XGOSESSID")
 #### SessionTTL
-The session live time in server side. Any operation with the session will reset the time. (default: 900)
+The session live time in server side. Any operation with the session (get,set) will reset the time. (default: 900)
 #### EnableGzip
-Enable to compress the content that send to browser with gzip. (default: true)  
+Enable to compress the response content with gzip. (default: true)  
 If you are using fcgi mode behind a web server like nginx that also uses gzip, you may need to set EnableGzip to false.
 ## Config
 You can set the values of all the variables above in a config file.  
