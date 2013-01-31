@@ -61,6 +61,7 @@ func (this *PostController) Get() {
 	this.Template.SetTemplateFile("post.tpl")
 }
 ```
+
 ## Variables
 #### ListenAddr
 App listening address. (default: "")
@@ -70,7 +71,7 @@ App listening port. (default: 80)
 Options: http,fcgi. (default: http)
 #### EnableDaemon
 An experimental option. (default: false)  
-While it is set to true, the app will be running in background. Linux only.
+While it is set to true, the app will be running in the background. Linux only.
 #### CookieSecret
 Secret key for secure cookie. (default: "foobar")  
 Set it to a different string if you want to use secret cookie or session.
@@ -81,6 +82,7 @@ The session live time in server side. Any operation with the session (get,set) w
 #### EnableGzip
 Enable to compress the response content with gzip. (default: true)  
 If you are using fcgi mode behind a web server like nginx that also uses gzip, you may need to set EnableGzip to false.
+
 ## Config
 You can set the values of all the variables above in a config file.  
 By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
@@ -94,6 +96,51 @@ As you see, you can also add some custom keys to config file, and fetch them wit
 
 	xgo.GetConfig("CustomConfigKey").String()
 the value can be converted to Int,Float64,Bool too.
+
+## Hook
+Xgo provides hook to control the request and response out of controller.  
+For example, if we want a user authorization in every admin page, we can register a hook like this:
+
+	xgo.RegisterControllerHook(xgo.HookAfterInit, func(c *xgo.HookController) {
+		c.Template.SetVar("Subb", "Hook edit Subb, url:"+url)
+		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
+			succ := checkUser()
+			if !succ {
+				c.Context.RedirectUrl("/admin/login")
+			}
+		}
+	})
+
+Currently, there are only controller hooks, and the hook events are:
+
+	xgo.HookAfterInit          
+	xgo.HookBeforeMethodGet    
+	xgo.HookAfterMethodGet     
+	xgo.HookBeforeMethodPost   
+	xgo.HookAfterMethodPost    
+	xgo.HookBeforeMethodHead   
+	xgo.HookAfterMethodHead    
+	xgo.HookBeforeMethodDelete 
+	xgo.HookAfterMethodDelete  
+	xgo.HookBeforeMethodPut    
+	xgo.HookAfterMethodPut     
+	xgo.HookBeforeMethodPatch  
+	xgo.HookAfterMethodPatch   
+	xgo.HookBeforeMethodOptions
+	xgo.HookAfterMethodOptions 
+	xgo.HookBeforeRender       
+	xgo.HookAfterRender        
+	xgo.HookBeforeOutput       
+	xgo.HookAfterOutput        
+
+## Custom error pages
+It is usually very useful to have a custom 404 page. In xgo, we can register a 404 page like this:
+
+	xgo.RegisterCustomHttpStatus(404, "notfound.html")
+or other http status code, for example, 403
+
+	xgo.RegisterCustomHttpStatus(403, "forbidden .html")
+
 ## .
 To be continued.  
 And sorry for my bad English.
