@@ -1,6 +1,7 @@
 package xgo
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
@@ -10,7 +11,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/textproto"
 	"os"
 	"strconv"
 	"strings"
@@ -188,7 +188,6 @@ func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
 			uploadFile := &xgoUploadFile{
 				Filename:   fhs[0].Filename,
-				Header:     fhs[0].Header,
 				fileHeader: fhs[0],
 			}
 			return uploadFile, nil
@@ -199,7 +198,6 @@ func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
 
 type xgoUploadFile struct {
 	Filename   string
-	Header     textproto.MIMEHeader
 	fileHeader *multipart.FileHeader
 }
 
@@ -219,4 +217,26 @@ func (this *xgoUploadFile) SaveFile(savePath string) error {
 		return err
 	}
 	return nil
+}
+
+func (this *xgoUploadFile) GetContentType() string {
+	return this.fileHeader.Header.Get("Content-Type")
+}
+
+func (this *xgoUploadFile) GetRawContentType() string {
+	file, err := this.fileHeader.Open()
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	r := bufio.NewReader(file)
+	p := []byte{}
+	for i := 0; i < 512; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			break
+		}
+		p = append(p, b)
+	}
+	return http.DetectContentType(p)
 }
