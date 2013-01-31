@@ -1,15 +1,12 @@
 ## Xgo
-=======
 Xgo是一个以简化web开发为目的的Go语言web框架。  
 Xgo is a simple web framework to build webapp easily in Go.  
 
 ## Installation
-============
 
     go get github.com/xgdapg/xgo
 
 ## Example
-============
 ```go
 package main
 
@@ -65,7 +62,6 @@ func (this *PostController) Get() {
 }
 ```
 ## Variables
-============
 #### ListenAddr
 App listening address. (default: "")
 #### ListenPort
@@ -98,7 +94,6 @@ As you see, you can also add some custom keys to config file, and fetch them wit
 
 	xgo.GetConfig("CustomConfigKey").String()
 the value can be converted to Int,Float64,Bool too.
-## Ending
-============
+## .
 To be continued.  
 And sorry for my bad English.
