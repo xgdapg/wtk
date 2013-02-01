@@ -76,12 +76,12 @@ While it is set to true, the app will be running in the background. Linux only.
 Secret key for secure cookie. (default: "foobar")  
 Set it to a different string if you want to use secret cookie or session.
 #### SessionName
-The session id is stored in cookie named with SessionName. (default: "XGOSESSID")
+The session id is stored in a cookie named with SessionName. (default: "XGOSESSID")
 #### SessionTTL
 The session live time in server side. Any operation with the session (get,set) will reset the time. (default: 900)
 #### EnableGzip
-Enable to compress the response content with gzip. (default: true)  
-If you are using fcgi mode behind a web server like nginx that also uses gzip, you may need to set EnableGzip to false.
+Enable xgo to compress the response content with gzip. (default: true)  
+If you are using fcgi mode behind a web server (like nginx) which  is  also using gzip, you may need to set EnableGzip to false.
 
 ## Config
 You can set the values of all the variables above in a config file.  
@@ -98,8 +98,8 @@ As you see, you can also add some custom keys to config file, and fetch them wit
 the value can be converted to Int,Float64,Bool too.
 
 ## Hook
-Xgo provides hook to control the request and response out of controller.  
-For example, if we want a user authorization in every admin page, we can register a hook like this:
+Xgo provides hook for us to control the request and response out of controller.  
+For example, if we need a user authorization in each admin page, we can register a hook like this:
 
 	xgo.RegisterControllerHook(xgo.HookAfterInit, func(c *xgo.HookController) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
@@ -140,6 +140,26 @@ or other http status code, for example, 403
 
 	xgo.RegisterCustomHttpStatus(403, "forbidden.html")
 
+## Upload files
+In xgo, there is an easy way to upload files.
+
+	func (this *UploadController) Post() {
+		f, err := this.Context.GetUploadFile("userfile")
+		if err != nil {
+			log.Println(err)
+			this.Context.RedirectUrl("/")
+		}
+		err = f.SaveFile("upload/" + f.Filename)
+		if err != nil {
+			log.Println(err)
+			this.Context.RedirectUrl("/")
+		}
+	}
+The returned variable f has several members:
+  - f.Filename: the filename of the uploaded file.
+  - f.SaveFile(savePath): save the uploaded file to the savePath
+  - f.GetContentType(): return the Content-Type of the uploaded file, detected with request header.
+  - f.GetRawContentType(): return the Content-Type of the uploaded file, detected with http.DetectContentType().
 ## .
 To be continued.  
 And sorry for my bad English.

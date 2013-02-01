@@ -180,10 +180,6 @@ func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
 	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
 		return nil, errors.New("Incorrect method: " + this.Request.Method)
 	}
-	err := this.Request.ParseMultipartForm(0)
-	if err != nil {
-		return nil, err
-	}
 	if this.Request.MultipartForm != nil && this.Request.MultipartForm.File != nil {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
 			uploadFile := &xgoUploadFile{
