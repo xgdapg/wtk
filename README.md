@@ -83,20 +83,6 @@ The session live time in server side. Any operation with the session (get,set) w
 Enable xgo to compress the response content with gzip. (default: true)  
 If you are using fcgi mode behind a web server (like nginx) which  is  also using gzip, you may need to set EnableGzip to false.
 
-## Config
-You can set the values of all the variables above in a config file.  
-By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
-The config file format is like this:  
-
-	ListenAddr=""
-	ListenPort=8080
-	CustomConfigKey=some value
-	...
-As you see, you can also add some custom keys to config file, and fetch them with
-
-	xgo.GetConfig("CustomConfigKey").String()
-the value can be converted to Int,Float64,Bool too.
-
 ## Hook
 Xgo provides hook for us to control the request and response out of controller.  
 For example, if we need a user authorization in each admin page, we can register a hook like this:
@@ -132,15 +118,82 @@ Currently, there are only controller hooks, and the hook events are:
 	xgo.HookBeforeOutput       
 	xgo.HookAfterOutput        
 
-## Custom error pages
-It is usually very useful to have a custom 404 page. In xgo, we can register a 404 page like this:
+## Controller
+#### Context
+  - Context.Response: http.ResponseWriter
+  - Context.Request: *http.Request
+  - Context.WriteString(content string)
+  - Context.WriteBytes(content []byte)
+  - Context.Abort(status int, content string)
+  - Context.Redirect(status int, url string)
+  - Context.RedirectUrl(url string)
+  - Context.SetHeader(name string, value string)
+  - Context.AddHeader(name string, value string)
+  - Context.SetContentType(ext string)
+  - Context.SetCookie(name string, value string, expires int64)
+  - Context.GetCookie(name string) string
+  - Context.SetSecureCookie(name string, value string, expires int64)
+  - Context.GetSecureCookie(name string) string
+  - Context.GetParam(name string) string
+  - Context.GetUploadFile(name string) (*xgoUploadFile, error)
 
-	xgo.RegisterCustomHttpStatus(404, "notfound.html")
-or other http status code, for example, 403
+#### Template
+A simple example:
 
-	xgo.RegisterCustomHttpStatus(403, "forbidden.html")
+	func (this *PostController) Get() {
+		this.Template.SetVar("Title", "The post title")
+		this.Template.SetVar("Content", "The post content")
+		this.Template.SetTemplateFile("post.tpl")
+	}
+Xgo will automatic call the Template.Parse() if you didn't call it.  
 
-## Upload files
+use Template.SetSubTemplateFile if you need a sub-template inside the post.tpl:
+
+	func (this *PostController) Get() {
+		this.Template.SetVar("Title", "The post title")
+		this.Template.SetVar("Content", "The post content")
+		this.Template.SetTemplateFile("post.tpl")
+		this.Template.SetSubTemplateFile("footer", "post_footer.tpl")
+	}
+Maybe you want to fetch the parsed content and save it as a static html file:
+
+	func (this *PostController) Get() {
+		this.Template.SetVar("Title", "The post title")
+		this.Template.SetVar("Content", "The post content")
+		this.Template.SetTemplateFile("post.tpl")
+		this.Template.SetSubTemplateFile("footer", "post_footer.tpl")
+		this.Template.Parse()
+		content := this.Template.GetResultString()
+		writeTheContentToSomewhere(content)
+	}
+The methods of Template:
+  - xgo.AddTemplateFunc(name string, tplFunc interface{})
+  - Template.SetVar(name string, value interface{})
+  - Template.GetVar(name string) interface{}
+  - Template.SetTemplateString(str string) bool
+  - Template.SetTemplateFile(filename string) bool
+  - Template.SetSubTemplateString(name, str string) bool
+  - Template.SetSubTemplateFile(name, filename string) bool
+  - Template.Parse() bool
+  - Template.GetResult() []byte
+  - Template.GetResultString() string
+  - Template.SetResult(p []byte)
+  - Template.SetResultString(s string)
+
+#### Session
+Sessions are stored in memory by default.  
+To store them in database or other places, you need a new implementation of SessionStorageInterface and register it:
+
+	xgo.RegisterSessionStorage(storage SessionStorageInterface)
+Usage:
+
+	func (this *PostController) Get() {
+		this.Session.Set("name", "data")
+		val := this.Session.Get("name")
+		this.Session.Delete("name")
+	}
+
+#### Upload files
 In xgo, there is an easy way to upload files.
 
 	func (this *UploadController) Post() {
@@ -160,6 +213,28 @@ The returned variable f has several members:
   - f.SaveFile(savePath): save the uploaded file to the savePath
   - f.GetContentType(): return the Content-Type of the uploaded file, detected with request header.
   - f.GetRawContentType(): return the Content-Type of the uploaded file, detected with http.DetectContentType().
+
+## Config
+You can set the values of all the variables above in a config file.  
+By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
+The config file format is like this:  
+
+	ListenAddr=""
+	ListenPort=8080
+	CustomConfigKey=some value
+	...
+As you see, you can also add some custom keys to config file, and fetch them with
+
+	xgo.GetConfig("CustomConfigKey").String()
+the value can be converted to Int,Float64,Bool too.
+
+## Custom error pages
+It is usually very useful to have a custom 404 page. In xgo, we can register a 404 page like this:
+
+	xgo.RegisterCustomHttpStatus(404, "notfound.html")
+or other http status code, for example, 403
+
+	xgo.RegisterCustomHttpStatus(403, "forbidden.html")
+
 ## .
-To be continued.  
-And sorry for my bad English.
+To be continued.
