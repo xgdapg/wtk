@@ -1,4 +1,4 @@
-package beego
+package xgo
 
 import (
 	"os"
