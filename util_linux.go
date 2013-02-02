@@ -20,7 +20,7 @@ func (this xgoUtil) SetDaemonMode(nochdir, noclose int) int {
 		os.Exit(0)
 	}
 	syscall.Umask(0)
-	s_ret, s_errno := syscall.Setsid()
+	s_ret, _ := syscall.Setsid()
 	if s_ret < 0 {
 		return -1
 	}
