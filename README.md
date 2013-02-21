@@ -17,14 +17,14 @@ import (
 )
 
 func main() {
-	xgo.RegisterController("/", &IndexController{})
+	xgo.RegisterHandler("/", &IndexHandler{})
 	// /post/id123 与 /post/id123-2 会被路由到同一个控制器进行处理。
-	// Both /post/id123 and /post/id123-2 will be routed to the same controller.
-	xgo.RegisterController("/post/:id([0-9a-zA-Z]+)", &PostController{})
-	xgo.RegisterController("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PostController{})
+	// Both /post/id123 and /post/id123-2 will be routed to the same Handler.
+	xgo.RegisterHandler("/post/:id([0-9a-zA-Z]+)", &PageHandler{})
+	xgo.RegisterHandler("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PageHandler{})
 	// 注册一个钩子，当模板解析完成时会回调钩子函数进行处理。
 	// Register a hook, and while the template has been parsed, the hook will be called.
-	xgo.RegisterControllerHook(xgo.HookAfterRender, func(c *xgo.HookController) {
+	xgo.RegisterHandlerHook(xgo.HookAfterRender, func(c *xgo.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/post") {
 			c.Template.SetResultString(c.Template.GetResultString() + "<div>append a footer</div>")
 		}
@@ -35,19 +35,19 @@ func main() {
 	xgo.Run()
 }
 
-type IndexController struct {
-	xgo.Controller
+type IndexHandler struct {
+	xgo.Handler
 }
 
-func (this *IndexController) Get() {
+func (this *IndexHandler) Get() {
 	this.Context.WriteString("Hello, index page")
 }
 
-type PostController struct {
-	xgo.Controller
+type PageHandler struct {
+	xgo.Handler
 }
 
-func (this *PostController) Get() {
+func (this *PageHandler) Get() {
 	id := this.Context.GetParam(":id")
 	strPage := this.Context.GetParam(":page")
 	page := 0
@@ -84,10 +84,10 @@ Enable xgo to compress the response content with gzip. (default: true)
 If you are using fcgi mode behind a web server (like nginx) which  is  also using gzip, you may need to set EnableGzip to false.
 
 ## Hook
-Xgo provides hook for us to control the request and response out of controller.  
+Xgo provides hook for us to control the request and response out of handler.  
 For example, if we need a user authorization in each admin page, we can register a hook like this:
 
-	xgo.RegisterControllerHook(xgo.HookAfterInit, func(c *xgo.HookController) {
+	xgo.RegisterHandlerHook(xgo.HookAfterInit, func(c *xgo.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
 			succ := checkUser()
 			if !succ {
@@ -96,7 +96,7 @@ For example, if we need a user authorization in each admin page, we can register
 		}
 	})
 
-Currently, there are only controller hooks, and the hook events are:
+Currently, there are only handler hooks, and the hook events are:
 
 	xgo.HookAfterInit          
 	xgo.HookBeforeMethodGet    
@@ -118,7 +118,7 @@ Currently, there are only controller hooks, and the hook events are:
 	xgo.HookBeforeOutput       
 	xgo.HookAfterOutput        
 
-## Controller
+## Handler
 #### Context
   - Context.Response: http.ResponseWriter
   - Context.Request: *http.Request
@@ -140,7 +140,7 @@ Currently, there are only controller hooks, and the hook events are:
 #### Template
 A simple example:
 
-	func (this *PostController) Get() {
+	func (this *PageHandler) Get() {
 		this.Template.SetVar("Title", "The post title")
 		this.Template.SetVar("Content", "The post content")
 		this.Template.SetTemplateFile("post.tpl")
@@ -149,7 +149,7 @@ Xgo will automatic call the Template.Parse() if you didn't call it.
 
 use Template.SetSubTemplateFile if you need a sub-template inside the post.tpl:
 
-	func (this *PostController) Get() {
+	func (this *PageHandler) Get() {
 		this.Template.SetVar("Title", "The post title")
 		this.Template.SetVar("Content", "The post content")
 		this.Template.SetTemplateFile("post.tpl")
@@ -157,7 +157,7 @@ use Template.SetSubTemplateFile if you need a sub-template inside the post.tpl:
 	}
 Maybe you want to fetch the parsed content and save it as a static html file:
 
-	func (this *PostController) Get() {
+	func (this *PageHandler) Get() {
 		this.Template.SetVar("Title", "The post title")
 		this.Template.SetVar("Content", "The post content")
 		this.Template.SetTemplateFile("post.tpl")
@@ -187,7 +187,7 @@ To store them in database or other places, you need a new implementation of Sess
 	xgo.RegisterSessionStorage(storage SessionStorageInterface)
 Usage:
 
-	func (this *PostController) Get() {
+	func (this *PageHandler) Get() {
 		this.Session.Set("name", "data")
 		val := this.Session.Get("name")
 		this.Session.Delete("name")
@@ -196,7 +196,7 @@ Usage:
 #### Upload files
 In xgo, there is an easy way to upload files.
 
-	func (this *UploadController) Post() {
+	func (this *UploadHandler) Post() {
 		f, err := this.Context.GetUploadFile("userfile")
 		if err != nil {
 			log.Println(err)

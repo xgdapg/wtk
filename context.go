@@ -18,7 +18,7 @@ import (
 )
 
 type xgoContext struct {
-	ctlr     *Controller
+	hdlr     *Handler
 	Response *xgoResponseWriter
 	Request  *http.Request
 }
@@ -36,8 +36,8 @@ func (this *xgoContext) WriteBytes(content []byte) {
 	if this.Response.Closed {
 		return
 	}
-	hc := this.ctlr.getHookController()
-	this.ctlr.app.callControllerHook("BeforeOutput", hc)
+	hc := this.hdlr.getHookHandler()
+	this.hdlr.app.callHandlerHook("BeforeOutput", hc)
 	if this.Response.Finished {
 		return
 	}
@@ -55,7 +55,7 @@ func (this *xgoContext) WriteBytes(content []byte) {
 	}
 	this.Response.Write(content)
 
-	this.ctlr.app.callControllerHook("AfterOutput", hc)
+	this.hdlr.app.callHandlerHook("AfterOutput", hc)
 	if this.Response.Finished {
 		return
 	}

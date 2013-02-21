@@ -31,24 +31,24 @@ func (this *xgoApp) init() *xgoApp {
 	return this
 }
 
-func (this *xgoApp) RegisterController(pattern string, c xgoControllerInterface) {
+func (this *xgoApp) RegisterHandler(pattern string, c xgoHandlerInterface) {
 	this.router.AddRule(pattern, c)
 }
 
-func (this *xgoApp) RegisterControllerHook(event string, hookFunc HookControllerFunc) {
-	this.hook.AddControllerHook(event, hookFunc)
+func (this *xgoApp) RegisterHandlerHook(event string, hookFunc HookHandlerFunc) {
+	this.hook.AddHandlerHook(event, hookFunc)
 }
 
-func (this *xgoApp) callControllerHook(event string, hc *HookController) {
-	this.hook.CallControllerHook(event, hc)
-	// this.extHook.CallControllerHook(event, hc)
+func (this *xgoApp) callHandlerHook(event string, hc *HookHandler) {
+	this.hook.CallHandlerHook(event, hc)
+	// this.extHook.CallHandlerHook(event, hc)
 }
 
-// func (this *xgoApp) registerAddonControllerHook(event string, hookFunc HookControllerFunc) {
-// 	this.extHook.AddControllerHook(event, hookFunc)
+// func (this *xgoApp) registerAddonHandlerHook(event string, hookFunc HookHandlerFunc) {
+// 	this.extHook.AddHandlerHook(event, hookFunc)
 // }
 
-// func (this *xgoApp) clearExtHook(event string, hookFunc HookControllerFunc) {
+// func (this *xgoApp) clearExtHook(event string, hookFunc HookHandlerFunc) {
 // 	this.extHook = &xgoHook{app: this}
 // }
 

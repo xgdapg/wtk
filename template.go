@@ -16,7 +16,7 @@ func AddTemplateFunc(name string, tplFunc interface{}) {
 }
 
 type xgoTemplate struct {
-	ctlr      *Controller
+	hdlr      *Handler
 	tpl       *template.Template
 	tplVars   map[string]interface{}
 	tplResult *xgoTemplateResult
@@ -72,9 +72,9 @@ func (this *xgoTemplate) Parse() bool {
 		return false
 	}
 
-	hc := this.ctlr.getHookController()
-	this.ctlr.app.callControllerHook("BeforeRender", hc)
-	if this.ctlr.Context.Response.Finished {
+	hc := this.hdlr.getHookHandler()
+	this.hdlr.app.callHandlerHook("BeforeRender", hc)
+	if this.hdlr.Context.Response.Finished {
 		return true
 	}
 
@@ -85,7 +85,7 @@ func (this *xgoTemplate) Parse() bool {
 		return false
 	}
 
-	this.ctlr.app.callControllerHook("AfterRender", hc)
+	this.hdlr.app.callHandlerHook("AfterRender", hc)
 	return true
 }
 

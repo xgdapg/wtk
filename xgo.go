@@ -47,12 +47,12 @@ func GetMainApp() *xgoApp {
 	return app
 }
 
-func RegisterController(pattern string, c xgoControllerInterface) {
-	app.RegisterController(pattern, c)
+func RegisterHandler(pattern string, c xgoHandlerInterface) {
+	app.RegisterHandler(pattern, c)
 }
 
-func RegisterControllerHook(event string, hookFunc HookControllerFunc) {
-	app.RegisterControllerHook(event, hookFunc)
+func RegisterHandlerHook(event string, hookFunc HookHandlerFunc) {
+	app.RegisterHandlerHook(event, hookFunc)
 }
 
 func SetStaticPath(sPath, fPath string) {

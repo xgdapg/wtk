@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-type xgoControllerInterface interface {
+type xgoHandlerInterface interface {
 	Init(*xgoApp, *xgoContext, *xgoTemplate, *xgoSession, string)
 	Get()
 	Post()
@@ -17,64 +17,64 @@ type xgoControllerInterface interface {
 	Output()
 }
 
-type Controller struct {
+type Handler struct {
 	app      *xgoApp
 	Context  *xgoContext
 	Template *xgoTemplate
 	Session  *xgoSession
 }
 
-func (this *Controller) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
+func (this *Handler) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
 	this.app = app
 	this.Context = ctx
-	this.Context.ctlr = this
+	this.Context.hdlr = this
 	this.Template = tpl
-	this.Template.ctlr = this
+	this.Template.hdlr = this
 	this.Session = sess
-	this.Session.ctlr = this
+	this.Session.hdlr = this
 }
 
-func (this *Controller) Get() {
+func (this *Handler) Get() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Post() {
+func (this *Handler) Post() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Delete() {
+func (this *Handler) Delete() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Put() {
+func (this *Handler) Put() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Head() {
+func (this *Handler) Head() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Patch() {
+func (this *Handler) Patch() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Options() {
+func (this *Handler) Options() {
 	http.Error(this.Context.Response, "Method Not Allowed", 405)
 }
 
-func (this *Controller) Render() {
+func (this *Handler) Render() {
 	this.Template.Parse()
 }
 
-func (this *Controller) Output() {
+func (this *Handler) Output() {
 	content := this.Template.GetResult()
 	if len(content) > 0 {
 		this.Context.WriteBytes(content)
 	}
 }
 
-func (this *Controller) getHookController() *HookController {
-	return &HookController{
+func (this *Handler) getHookHandler() *HookHandler {
+	return &HookHandler{
 		Context:  this.Context,
 		Template: this.Template,
 		Session:  this.Session,

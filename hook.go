@@ -23,30 +23,30 @@ const (
 )
 
 type xgoHook struct {
-	app             *xgoApp
-	controllerHooks map[string][]HookControllerFunc
+	app          *xgoApp
+	handlerHooks map[string][]HookHandlerFunc
 }
 
-type HookController struct {
+type HookHandler struct {
 	Context  *xgoContext
 	Template *xgoTemplate
 	Session  *xgoSession
 }
 
-type HookControllerFunc func(*HookController)
+type HookHandlerFunc func(*HookHandler)
 
-func (this *xgoHook) AddControllerHook(event string, hookFunc HookControllerFunc) {
-	if this.controllerHooks == nil {
-		this.controllerHooks = make(map[string][]HookControllerFunc)
+func (this *xgoHook) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
+	if this.handlerHooks == nil {
+		this.handlerHooks = make(map[string][]HookHandlerFunc)
 	}
-	if _, ok := this.controllerHooks[event]; !ok {
-		this.controllerHooks[event] = []HookControllerFunc{}
+	if _, ok := this.handlerHooks[event]; !ok {
+		this.handlerHooks[event] = []HookHandlerFunc{}
 	}
-	this.controllerHooks[event] = append(this.controllerHooks[event], hookFunc)
+	this.handlerHooks[event] = append(this.handlerHooks[event], hookFunc)
 }
 
-func (this *xgoHook) CallControllerHook(event string, hc *HookController) {
-	if funcList, ok := this.controllerHooks[event]; ok {
+func (this *xgoHook) CallHandlerHook(event string, hc *HookHandler) {
+	if funcList, ok := this.handlerHooks[event]; ok {
 		for _, hookFunc := range funcList {
 			hookFunc(hc)
 			if hc.Context.Response.Finished {

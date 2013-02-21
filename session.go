@@ -54,7 +54,7 @@ func (this *xgoSessionManager) Delete(sid string) {
 }
 
 type xgoSession struct {
-	ctlr           *Controller
+	hdlr           *Handler
 	sessionManager *xgoSessionManager
 	sessionId      string
 	ctx            *xgoContext
