@@ -18,16 +18,16 @@ func AddTemplateFunc(name string, tplFunc interface{}) {
 type xgoTemplate struct {
 	hdlr      *Handler
 	tpl       *template.Template
-	tplVars   map[string]interface{}
+	Vars      map[string]interface{}
 	tplResult *xgoTemplateResult
 }
 
 func (this *xgoTemplate) SetVar(name string, value interface{}) {
-	this.tplVars[name] = value
+	this.Vars[name] = value
 }
 
 func (this *xgoTemplate) GetVar(name string) interface{} {
-	if val, ok := this.tplVars[name]; ok {
+	if val, ok := this.Vars[name]; ok {
 		return val
 	}
 	return nil
@@ -80,7 +80,7 @@ func (this *xgoTemplate) Parse() bool {
 
 	this.tplResult = &xgoTemplateResult{data: []byte{}}
 	this.tpl.Funcs(tplFuncMap)
-	err := this.tpl.Execute(this.tplResult, this.tplVars)
+	err := this.tpl.Execute(this.tplResult, this.Vars)
 	if err != nil {
 		return false
 	}
