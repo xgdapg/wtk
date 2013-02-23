@@ -6,6 +6,8 @@ import (
 
 var (
 	app          *xgoApp
+	apps         map[int]*xgoApp
+	appIdGen     *AutoIncr
 	util         xgoUtil
 	cfg          *xgoConfig
 	cfgFile      string = "app.conf"
@@ -35,12 +37,17 @@ func init() {
 	cfg = &xgoConfig{}
 	LoadConfig()
 
+	apps = make(map[int]*xgoApp)
+	appIdGen = NewAutoIncr(1, 1)
 	app = NewApp()
 	util = xgoUtil{}
 }
 
 func NewApp() *xgoApp {
-	return new(xgoApp).init()
+	id := appIdGen.Fetch()
+	a := new(xgoApp).init(id)
+	apps[id] = a
+	return a
 }
 
 func GetMainApp() *xgoApp {

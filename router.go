@@ -194,7 +194,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	tpl := &xgoTemplate{
 		hdlr:      nil,
 		tpl:       nil,
-		tplVars:   make(map[string]interface{}),
+		Vars:      make(map[string]interface{}),
 		tplResult: nil,
 	}
 	sess := &xgoSession{

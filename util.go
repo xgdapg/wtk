@@ -36,3 +36,36 @@ func (this xgoUtil) getCookieSig(secret, name, value, timestamp string) string {
 	hex := fmt.Sprintf("%02x", hm.Sum(nil))
 	return hex
 }
+
+type AutoIncr struct {
+	start, step int
+	queue       chan int
+	running     bool
+}
+
+func NewAutoIncr(start, step int) (ai *AutoIncr) {
+	ai = &AutoIncr{
+		start:   start,
+		step:    step,
+		running: true,
+		queue:   make(chan int, 4),
+	}
+	go ai.process()
+	return
+}
+
+func (ai *AutoIncr) process() {
+	defer func() { recover() }()
+	for i := ai.start; ai.running; i = i + ai.step {
+		ai.queue <- i
+	}
+}
+
+func (ai *AutoIncr) Fetch() int {
+	return <-ai.queue
+}
+
+func (ai *AutoIncr) Close() {
+	ai.running = false
+	close(ai.queue)
+}

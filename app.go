@@ -9,6 +9,8 @@ import (
 )
 
 type xgoApp struct {
+	Id               int
+	listener         net.Listener
 	router           *xgoRouter
 	hook             *xgoHook
 	session          *xgoSessionManager
@@ -16,7 +18,8 @@ type xgoApp struct {
 	// extHook *xgoHook
 }
 
-func (this *xgoApp) init() *xgoApp {
+func (this *xgoApp) init(id int) *xgoApp {
+	this.Id = id
 	this.router = &xgoRouter{
 		app:         this,
 		Rules:       []*xgoRoutingRule{},
@@ -66,22 +69,30 @@ func (this *xgoApp) RegisterCustomHttpStatus(code int, filePath string) {
 
 func (this *xgoApp) Run(mode string, addr string, port int) {
 	listenAddr := net.JoinHostPort(addr, fmt.Sprintf("%d", port))
-	var err error
+	l, e := net.Listen("tcp", listenAddr)
+	if e != nil {
+		panic("Listen error: " + e.Error())
+	}
+	this.listener = l
+
 	switch mode {
 	case "http":
-		err = http.ListenAndServe(listenAddr, this.router)
+		http.Serve(l, this.router)
 	case "fcgi":
-		l, e := net.Listen("tcp", listenAddr)
-		if e != nil {
-			panic("Fcgi listen error: " + e.Error())
-		}
-		err = fcgi.Serve(l, this.router)
+		fcgi.Serve(l, this.router)
 	default:
-		err = http.ListenAndServe(listenAddr, this.router)
+		http.Serve(l, this.router)
 	}
-	if err != nil {
-		panic("ListenAndServe error: " + err.Error())
-	}
+	l.Close()
+}
+
+func (this *xgoApp) Stop() {
+	this.listener.Close()
+}
+
+func (this *xgoApp) Close() {
+	delete(apps, this.Id)
+	this.Stop()
 }
 
 func (this *xgoApp) AppPath() string {

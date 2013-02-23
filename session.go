@@ -94,6 +94,7 @@ func (this *xgoSession) Delete(key string) {
 type xgoDefaultSessionStorage struct {
 	ttl   int64
 	datas map[string]xgoDefaultSessionStorageData
+	incr  *AutoIncr
 }
 
 type xgoDefaultSessionStorageData struct {
@@ -108,6 +109,7 @@ func (this *xgoDefaultSessionStorage) Init(ttl int64) {
 	this.ttl = ttl
 	this.datas = make(map[string]xgoDefaultSessionStorageData)
 	go this.gc()
+	this.incr = NewAutoIncr(1, 1)
 }
 
 func (this *xgoDefaultSessionStorage) gc() {
@@ -126,7 +128,7 @@ func (this *xgoDefaultSessionStorage) gc() {
 
 func (this *xgoDefaultSessionStorage) CreateSessionID() string {
 	t := time.Now()
-	return "SESS" + fmt.Sprintf("%d%d", t.Unix(), t.Nanosecond())
+	return "SESS" + fmt.Sprintf("%d%d", t.Unix(), this.incr.Fetch())
 }
 
 func (this *xgoDefaultSessionStorage) Set(sid string, data map[string]string) {
