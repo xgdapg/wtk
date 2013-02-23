@@ -95,6 +95,15 @@ func (this *xgoApp) Close() {
 	this.Stop()
 }
 
+func (this *xgoApp) Clone() *xgoApp {
+	a := NewApp()
+	a.router = this.router
+	a.hook = this.hook
+	a.session = this.session
+	a.customHttpStatus = this.customHttpStatus
+	return a
+}
+
 func (this *xgoApp) AppPath() string {
 	path, _ := os.Getwd()
 	return path
