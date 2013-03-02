@@ -55,14 +55,27 @@ type xgoRoutingRule struct {
 }
 
 type xgoRouter struct {
-	app         *xgoApp
-	Rules       []*xgoRoutingRule
-	StaticRules []*xgoRoutingRule
-	StaticDir   map[string]string
+	app            *xgoApp
+	Rules          []*xgoRoutingRule
+	StaticRules    []*xgoRoutingRule
+	StaticDir      map[string]string
+	StaticFileType []string
 }
 
 func (this *xgoRouter) SetStaticPath(sPath, fPath string) {
 	this.StaticDir[sPath] = fPath
+}
+
+func (this *xgoRouter) SetStaticFileType(ext string) {
+	if ext[0] != '.' {
+		ext = "." + ext
+	}
+	for _, s := range this.StaticFileType {
+		if s == ext {
+			return
+		}
+	}
+	this.StaticFileType = append(this.StaticFileType, ext)
 }
 
 func (this *xgoRouter) AddRule(pattern string, c xgoHandlerInterface) error {
@@ -133,6 +146,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	//static file server
 	if r.Method == "GET" || r.Method == "HEAD" {
+		for _, ext := range this.StaticFileType {
+			if strings.HasSuffix(urlPath, ext) {
+				http.ServeFile(w, r, urlPath[1:])
+				return
+			}
+		}
 		for sPath, fPath := range this.StaticDir {
 			if strings.HasPrefix(urlPath, sPath) {
 				file := fPath + urlPath[len(sPath):]

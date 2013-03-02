@@ -66,6 +66,10 @@ func SetStaticPath(sPath, fPath string) {
 	app.SetStaticPath(sPath, fPath)
 }
 
+func SetStaticFileType(ext string) {
+	app.SetStaticFileType(ext)
+}
+
 func RegisterSessionStorage(storage SessionStorageInterface) {
 	app.RegisterSessionStorage(storage)
 }
