@@ -3,7 +3,6 @@ package xgo
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -43,16 +42,7 @@ func (this *xgoContext) WriteBytes(content []byte) {
 	}
 
 	this.SetHeader("Content-Type", http.DetectContentType(content))
-	if EnableGzip {
-		if strings.Contains(this.Request.Header.Get("Accept-Encoding"), "gzip") {
-			this.SetHeader("Content-Encoding", "gzip")
-			buf := new(bytes.Buffer)
-			gz := gzip.NewWriter(buf)
-			gz.Write(content)
-			gz.Close()
-			content = buf.Bytes()
-		}
-	}
+
 	this.Response.Write(content)
 
 	this.hdlr.app.callHandlerHook("AfterOutput", hc)

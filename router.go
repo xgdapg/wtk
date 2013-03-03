@@ -1,10 +1,10 @@
 package xgo
 
 import (
+	"compress/gzip"
 	"errors"
-	"net/http"
-	// "net/url"
 	"io/ioutil"
+	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,6 +13,7 @@ import (
 type xgoResponseWriter struct {
 	app      *xgoApp
 	writer   http.ResponseWriter
+	request  *http.Request
 	Closed   bool
 	Finished bool
 }
@@ -25,6 +26,32 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 	if this.Closed {
 		return 0, nil
 	}
+
+	useGzip := false
+	if EnableGzip &&
+		strings.Contains(this.request.Header.Get("Accept-Encoding"), "gzip") &&
+		len(p) >= GzipMinLength {
+		ctype := this.writer.Header().Get("Content-Type")
+		for _, t := range GzipTypes {
+			if strings.Contains(ctype, t) {
+				useGzip = true
+				break
+			}
+		}
+	}
+	if useGzip {
+		length := len(p)
+		this.Header().Set("Content-Encoding", "gzip")
+		this.Header().Del("Content-Length")
+
+		gz := gzip.NewWriter(this.writer)
+		defer gz.Close()
+
+		this.writer.WriteHeader(http.StatusOK)
+		_, err := gz.Write(p)
+		return length, err
+	}
+	this.writer.WriteHeader(http.StatusOK)
 	return this.writer.Write(p)
 }
 
@@ -32,13 +59,17 @@ func (this *xgoResponseWriter) WriteHeader(code int) {
 	if this.Closed {
 		return
 	}
-	this.writer.WriteHeader(code)
+
+	if code != http.StatusOK {
+		this.writer.WriteHeader(code)
+	}
+
 	if filepath, ok := app.customHttpStatus[code]; ok {
 		content, err := ioutil.ReadFile(filepath)
 		if err != nil {
 			content = []byte(http.StatusText(code))
 		}
-		this.writer.Write(content)
+		this.Write(content)
 		this.Close()
 	}
 }
@@ -132,10 +163,10 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// }
 	// }
 	// }()
-
 	w := &xgoResponseWriter{
 		app:      this.app,
 		writer:   rw,
+		request:  r,
 		Closed:   false,
 		Finished: false,
 	}

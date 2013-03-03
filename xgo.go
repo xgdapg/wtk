@@ -5,22 +5,24 @@ import (
 )
 
 var (
-	app          *xgoApp
-	apps         map[int]*xgoApp
-	appIdGen     *AutoIncr
-	util         xgoUtil
-	cfg          *xgoConfig
-	cfgFile      string = "app.conf"
-	ListenAddr   string = ""
-	ListenPort   int    = 80
-	RunMode      string = "http"
-	EnableDaemon bool   = false
-	EnableStats  bool   = true
-	CookieSecret string = "foobar"
-	SessionName  string = "XGOSESSID"
-	SessionTTL   int64  = 60 * 15
-	EnablePprof  bool   = true
-	EnableGzip   bool   = true
+	app           *xgoApp
+	apps          map[int]*xgoApp
+	appIdGen      *AutoIncr
+	util          xgoUtil
+	cfg           *xgoConfig
+	cfgFile       string   = "app.conf"
+	ListenAddr    string   = ""
+	ListenPort    int      = 80
+	RunMode       string   = "http"
+	EnableDaemon  bool     = false
+	EnableStats   bool     = true
+	CookieSecret  string   = "foobar"
+	SessionName   string   = "XGOSESSID"
+	SessionTTL    int64    = 60 * 15
+	EnablePprof   bool     = true
+	EnableGzip    bool     = true
+	GzipMinLength int      = 1024
+	GzipTypes     []string = []string{"text", "javascript", "css", "xml"}
 )
 
 func init() {
