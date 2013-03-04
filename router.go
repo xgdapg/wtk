@@ -3,6 +3,7 @@ package xgo
 import (
 	"compress/gzip"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -27,6 +28,8 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 
+	var writer io.Writer = this.writer
+
 	useGzip := false
 	if EnableGzip &&
 		strings.Contains(this.request.Header.Get("Accept-Encoding"), "gzip") &&
@@ -40,19 +43,15 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 		}
 	}
 	if useGzip {
-		length := len(p)
 		this.Header().Set("Content-Encoding", "gzip")
 		this.Header().Del("Content-Length")
 
 		gz := gzip.NewWriter(this.writer)
 		defer gz.Close()
-
-		this.writer.WriteHeader(http.StatusOK)
-		_, err := gz.Write(p)
-		return length, err
+		writer = gz
 	}
-	this.writer.WriteHeader(http.StatusOK)
-	return this.writer.Write(p)
+
+	return writer.Write(p)
 }
 
 func (this *xgoResponseWriter) WriteHeader(code int) {
