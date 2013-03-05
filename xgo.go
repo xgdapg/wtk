@@ -5,24 +5,25 @@ import (
 )
 
 var (
-	app           *xgoApp
-	apps          map[int]*xgoApp
-	appIdGen      *AutoIncr
-	util          xgoUtil
-	cfg           *xgoConfig
-	cfgFile       string   = "app.conf"
-	ListenAddr    string   = ""
-	ListenPort    int      = 80
-	RunMode       string   = "http"
-	EnableDaemon  bool     = false
-	EnableStats   bool     = true
-	CookieSecret  string   = "foobar"
-	SessionName   string   = "XGOSESSID"
-	SessionTTL    int64    = 60 * 15
-	EnablePprof   bool     = true
-	EnableGzip    bool     = true
-	GzipMinLength int      = 1024
-	GzipTypes     []string = []string{"text", "javascript", "css", "xml"}
+	app               *xgoApp
+	apps              map[int]*xgoApp
+	appIdGen          *AutoIncr
+	util              xgoUtil
+	cfg               *xgoConfig
+	cfgFile           string   = "app.conf"
+	ListenAddr        string   = ""
+	ListenPort        int      = 80
+	RunMode           string   = "http"
+	EnableStats       bool     = true
+	CookieSecret      string   = "foobar"
+	SessionName       string   = "XGOSESSID"
+	SessionTTL        int64    = 60 * 15
+	EnablePprof       bool     = true
+	EnableGzip        bool     = true
+	GzipMinLength     int      = 1024
+	GzipTypes         []string = []string{"text", "javascript", "css", "xml"}
+	SslCertificate    string   = ""
+	SslCertificateKey string   = ""
 )
 
 func init() {
@@ -80,11 +81,8 @@ func RegisterCustomHttpStatus(code int, filePath string) {
 	app.RegisterCustomHttpStatus(code, filePath)
 }
 
-func Run() {
-	if EnableDaemon {
-		util.CallMethod(&util, "SetDaemonMode", 1, 0)
-	}
-	app.Run(RunMode, ListenAddr, ListenPort)
+func Run() error {
+	return app.Run(RunMode, ListenAddr, ListenPort)
 }
 
 func LoadConfig() {
@@ -100,9 +98,6 @@ func LoadConfig() {
 	}
 	if v, ok := cfg.GetConfig("RunMode").String(); ok {
 		RunMode = v
-	}
-	if v, ok := cfg.GetConfig("EnableDaemon").Bool(); ok {
-		EnableDaemon = v
 	}
 	if v, ok := cfg.GetConfig("EnableStats").Bool(); ok {
 		EnableStats = v

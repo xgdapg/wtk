@@ -1,6 +1,7 @@
 package xgo
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -71,11 +72,26 @@ func (this *xgoApp) RegisterCustomHttpStatus(code int, filePath string) {
 	this.customHttpStatus[code] = filePath
 }
 
-func (this *xgoApp) Run(mode string, addr string, port int) {
+func (this *xgoApp) Run(mode string, addr string, port int) error {
 	listenAddr := net.JoinHostPort(addr, fmt.Sprintf("%d", port))
+
+	var tlsConfig *tls.Config
+	if mode == "https" {
+		tlsConfig = &tls.Config{}
+		if tlsConfig.NextProtos == nil {
+			tlsConfig.NextProtos = []string{"http/1.1"}
+		}
+		var err error
+		tlsConfig.Certificates = make([]tls.Certificate, 1)
+		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(SslCertificate, SslCertificateKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	l, e := net.Listen("tcp", listenAddr)
 	if e != nil {
-		panic("Listen error: " + e.Error())
+		return e
 	}
 	this.listener = l
 
@@ -84,10 +100,13 @@ func (this *xgoApp) Run(mode string, addr string, port int) {
 		http.Serve(l, this.router)
 	case "fcgi":
 		fcgi.Serve(l, this.router)
+	case "https":
+		http.Serve(tls.NewListener(l, tlsConfig), this.router)
 	default:
 		http.Serve(l, this.router)
 	}
 	l.Close()
+	return nil
 }
 
 func (this *xgoApp) Stop() {
