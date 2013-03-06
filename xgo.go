@@ -10,23 +10,40 @@ var (
 	appIdGen          *AutoIncr
 	util              xgoUtil
 	cfg               *xgoConfig
-	cfgFile           string   = "app.conf"
-	ListenAddr        string   = ""
-	ListenPort        int      = 80
-	RunMode           string   = "http"
-	EnableStats       bool     = true
-	CookieSecret      string   = "foobar"
-	SessionName       string   = "XGOSESSID"
-	SessionTTL        int64    = 60 * 15
-	EnablePprof       bool     = true
-	EnableGzip        bool     = true
-	GzipMinLength     int      = 1024
-	GzipTypes         []string = []string{"text", "javascript", "css", "xml"}
-	SslCertificate    string   = ""
-	SslCertificateKey string   = ""
+	cfgFile           string
+	ListenAddr        string
+	ListenPort        int
+	RunMode           string
+	EnableStats       bool
+	CookieSecret      string
+	SessionName       string
+	SessionTTL        int64
+	EnablePprof       bool
+	EnableGzip        bool
+	GzipMinLength     int
+	GzipTypes         []string
+	SslCertificate    string
+	SslCertificateKey string
 )
 
 func init() {
+	defaultCfg := &xgoDefaultConfig{
+		ListenAddr:        "",
+		ListenPort:        80,
+		RunMode:           "http",
+		EnableStats:       true,
+		CookieSecret:      "foobar",
+		SessionName:       "XGOSESSID",
+		SessionTTL:        60 * 15,
+		EnablePprof:       true,
+		EnableGzip:        true,
+		GzipMinLength:     1024,
+		GzipTypes:         []string{"text", "javascript", "css", "xml"},
+		SslCertificate:    "",
+		SslCertificateKey: "",
+	}
+
+	cfgFile = "app.conf"
 	// Check the first argument of cmd line,
 	// if it is not a flag (begin with '-'),
 	// try to use it as the config file path.
@@ -38,8 +55,8 @@ func init() {
 	}
 
 	cfg = &xgoConfig{}
-	LoadConfig()
-
+	cfg.LoadFile(cfgFile)
+	cfg.RegisterConfig(defaultCfg)
 	apps = make(map[int]*xgoApp)
 	appIdGen = NewAutoIncr(1, 1)
 	app = NewApp()
@@ -85,34 +102,10 @@ func Run() error {
 	return app.Run(RunMode, ListenAddr, ListenPort)
 }
 
-func LoadConfig() {
-	err := cfg.LoadConfig("app.conf")
-	if err != nil {
-		return
-	}
-	if v, ok := cfg.GetConfig("ListenAddr").String(); ok {
-		ListenAddr = v
-	}
-	if v, ok := cfg.GetConfig("ListenPort").Int(); ok {
-		ListenPort = v
-	}
-	if v, ok := cfg.GetConfig("RunMode").String(); ok {
-		RunMode = v
-	}
-	if v, ok := cfg.GetConfig("EnableStats").Bool(); ok {
-		EnableStats = v
-	}
-	if v, ok := cfg.GetConfig("SessionName").String(); ok {
-		SessionName = v
-	}
-	if v, ok := cfg.GetConfig("SessionTTL").Int(); ok {
-		SessionTTL = int64(v)
-	}
-	if v, ok := cfg.GetConfig("EnablePprof").Bool(); ok {
-		EnablePprof = v
-	}
+func LoadConfig(conf interface{}) error {
+	return cfg.RegisterConfig(conf)
 }
 
-func GetConfig(key string) *xgoConfigValue {
-	return cfg.GetConfig(key)
+func ReloadConfig() error {
+	return cfg.ReloadFile()
 }

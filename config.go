@@ -1,100 +1,79 @@
 package xgo
 
 import (
-	"bufio"
-	"bytes"
-	"io"
-	"os"
-	"strconv"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 )
 
 type xgoConfig struct {
-	datas map[string]string
+	file string
+	data []byte
+	cfgs []interface{}
 }
 
-func (this *xgoConfig) GetConfig(key string) *xgoConfigValue {
-	val := &xgoConfigValue{
-		value: "",
-		exist: false,
-	}
-	if data, exist := this.datas[key]; exist {
-		val.value = data
-		val.exist = true
-	}
-	return val
-}
-
-func (this *xgoConfig) LoadConfig(filename string) error {
-	this.datas = make(map[string]string)
-
-	file, err := os.Open(filename)
+func (this *xgoConfig) LoadFile(filename string) error {
+	var err error
+	this.data, err = ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-
-	buf := bufio.NewReader(file)
-	for {
-		line, _, err := buf.ReadLine()
-		if err == io.EOF {
-			break
-		}
-		if bytes.Equal(line, []byte{}) {
-			continue
-		}
-		line = bytes.TrimSpace(line)
-		if bytes.HasPrefix(line, []byte{'#'}) {
-			continue
-		}
-		s := bytes.SplitN(line, []byte{'='}, 2)
-		k := string(bytes.TrimSpace(s[0]))
-		v := string(bytes.TrimSpace(s[1]))
-		this.datas[k] = v
+	this.file = filename
+	for _, cfg := range this.cfgs {
+		this.loadConfig(cfg)
 	}
 	return nil
 }
 
-type xgoConfigValue struct {
-	value string
-	exist bool
+func (this *xgoConfig) ReloadFile() error {
+	return this.LoadFile(this.file)
 }
 
-func (this *xgoConfigValue) String() (string, bool) {
-	if !this.exist {
-		return "", false
-	}
-	return this.value, true
+func (this *xgoConfig) RegisterConfig(cfg interface{}) error {
+	this.cfgs = append(this.cfgs, cfg)
+	return this.loadConfig(cfg)
 }
 
-func (this *xgoConfigValue) Int() (int, bool) {
-	if !this.exist {
-		return 0, false
+func (this *xgoConfig) loadConfig(cfg interface{}) error {
+	if len(this.data) > 0 {
+		err := json.Unmarshal(this.data, cfg)
+		if err != nil {
+			return err
+		}
+		util.CallMethod(cfg, "OnLoaded")
+		return nil
 	}
-	i, err := strconv.Atoi(this.value)
-	if err != nil {
-		return 0, false
-	}
-	return i, true
+	return errors.New("config file is not loaded")
 }
 
-func (this *xgoConfigValue) Float64() (float64, bool) {
-	if !this.exist {
-		return 0, false
-	}
-	f, err := strconv.ParseFloat(this.value, 64)
-	if err != nil {
-		return 0, false
-	}
-	return f, true
+type xgoDefaultConfig struct {
+	ListenAddr        string
+	ListenPort        int
+	RunMode           string
+	EnableStats       bool
+	CookieSecret      string
+	SessionName       string
+	SessionTTL        int64
+	EnablePprof       bool
+	EnableGzip        bool
+	GzipMinLength     int
+	GzipTypes         []string
+	SslCertificate    string
+	SslCertificateKey string
 }
 
-func (this *xgoConfigValue) Bool() (bool, bool) {
-	if !this.exist {
-		return false, false
-	}
-	b, err := strconv.ParseBool(this.value)
-	if err != nil {
-		return false, false
-	}
-	return b, true
+func (this *xgoDefaultConfig) OnLoaded() {
+	ListenAddr = this.ListenAddr
+	ListenPort = this.ListenPort
+	RunMode = this.RunMode
+	EnableStats = this.EnableStats
+	CookieSecret = this.CookieSecret
+	SessionName = this.SessionName
+	SessionTTL = this.SessionTTL
+	EnablePprof = this.EnablePprof
+	EnableGzip = this.EnableGzip
+	GzipMinLength = this.GzipMinLength
+	GzipTypes = this.GzipTypes
+	SslCertificate = this.SslCertificate
+	SslCertificateKey = this.SslCertificateKey
 }

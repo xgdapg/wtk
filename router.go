@@ -145,23 +145,6 @@ func (this *xgoRouter) AddRule(pattern string, c xgoHandlerInterface) error {
 }
 
 func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	// defer func() {
-	// if err := recover(); err != nil {
-	// fmt.Println("RECOVER:", err)
-	// if !RecoverPanic {
-	// 	panic(err)
-	// } else {
-	// 	Critical("Handler crashed with error", err)
-	// 	for i := 1; ; i += 1 {
-	// 		_, file, line, ok := runtime.Caller(i)
-	// 		if !ok {
-	// 			break
-	// 		}
-	// 		Critical(file, line)
-	// 	}
-	// }
-	// }
-	// }()
 	w := &xgoResponseWriter{
 		app:      this.app,
 		writer:   rw,
