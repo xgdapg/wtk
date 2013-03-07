@@ -68,10 +68,7 @@ App listening address. (default: "")
 #### ListenPort
 App listening port. (default: 80) 
 #### RunMode
-Options: http,fcgi. (default: http)
-#### EnableDaemon
-An experimental option. (default: false)  
-While it is set to true, the app will be running in the background. Linux only.
+Options: http, https, fcgi. (default: http)
 #### CookieSecret
 Secret key for secure cookie. (default: "foobar")  
 Set it to a different string if you want to use secret cookie or session.
@@ -81,7 +78,15 @@ The session id is stored in a cookie named with SessionName. (default: "XGOSESSI
 The session live time in server side. Any operation with the session (get,set) will reset the time. (default: 900)
 #### EnableGzip
 Enable xgo to compress the response content with gzip. (default: true)  
-If you are using fcgi mode behind a web server (like nginx) which  is  also using gzip, you may need to set EnableGzip to false.
+If you are using fcgi mode behind a web server (like nginx) which is also using gzip, you may need to set EnableGzip to false.
+#### GzipMinLength
+(default: 1024)
+#### GzipTypes
+(default: text, javascript, css, xml)
+#### SslCertificate
+
+#### SslCertificateKey
+
 
 ## Hook
 Xgo provides hook for us to control the request and response out of handler.  
@@ -217,16 +222,38 @@ The returned variable f has several members:
 ## Config
 You can set the values of all the variables above in a config file.  
 By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
-The config file format is like this:  
+The config file format is json:  
 
-	ListenAddr=""
-	ListenPort=8080
-	CustomConfigKey=some value
-	...
+	{
+		"ListenAddr": "",
+		"ListenPort": 8080,
+		"EnableGzip": true,
+		"GzipTypes": ["text", "javascript", "css", "xml"],
+		"CustomString": "string value",
+		"CustomStringArray": ["string1", "string2", "string3"]
+		...
+	}
 As you see, you can also add some custom keys to config file, and fetch them with
 
-	xgo.GetConfig("CustomConfigKey").String()
-the value can be converted to Int,Float64,Bool too.
+	// first define a config struct
+	type customConfig struct {
+		CustomString      string
+		CustomStringArray []string
+	}
+	// set default value
+	cfg := &customConfig{
+		CustomString:      "default string",
+		CustomStringArray: []string{"default string1", "default string2"},
+	}
+	// load the config into this struct
+	xgo.LoadConfig(cfg)
+	// now the cfg.CustomString is "string value", or "default string" if there's no "CustomString" field in the config file or some errors occurred
+	fmt.Println(cfg.CustomString)
+If there is a method "OnLoaded" in your config struct (eg. customConfig), it will be called after everytime you load/reload the config.
+
+	func (this *customConfig) OnLoaded() {
+		fmt.Println("cfg.CustomString is changed to ", cfg.CustomString)
+	}
 
 ## Custom error pages
 It is usually very useful to have a custom 404 page. In xgo, we can register a 404 page like this:
