@@ -252,7 +252,7 @@ As you see, you can also add some custom keys to config file, and fetch them wit
 If there is a method "OnLoaded" in your config struct (eg. customConfig), it will be called after everytime you load/reload the config.
 
 	func (this *customConfig) OnLoaded() {
-		fmt.Println("cfg.CustomString is changed to ", cfg.CustomString)
+		fmt.Println("cfg.CustomString is changed to ", this.CustomString)
 	}
 
 ## Custom error pages
