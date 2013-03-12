@@ -60,8 +60,8 @@ func (this *xgoApp) SetStaticPath(sPath, fPath string) {
 	this.router.SetStaticPath(sPath, fPath)
 }
 
-func (this *xgoApp) SetStaticFileType(ext string) {
-	this.router.SetStaticFileType(ext)
+func (this *xgoApp) SetStaticFileType(ext ...string) {
+	this.router.SetStaticFileType(ext...)
 }
 
 func (this *xgoApp) RegisterSessionStorage(storage SessionStorageInterface) {

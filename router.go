@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -96,16 +97,18 @@ func (this *xgoRouter) SetStaticPath(sPath, fPath string) {
 	this.StaticDir[sPath] = fPath
 }
 
-func (this *xgoRouter) SetStaticFileType(ext string) {
-	if ext[0] != '.' {
-		ext = "." + ext
-	}
-	for _, s := range this.StaticFileType {
-		if s == ext {
-			return
+func (this *xgoRouter) SetStaticFileType(exts ...string) {
+	for _, ext := range exts {
+		if ext[0] != '.' {
+			ext = "." + ext
 		}
+		for _, s := range this.StaticFileType {
+			if s == ext {
+				return
+			}
+		}
+		this.StaticFileType = append(this.StaticFileType, ext)
 	}
-	this.StaticFileType = append(this.StaticFileType, ext)
 }
 
 func (this *xgoRouter) AddRule(pattern string, c xgoHandlerInterface) error {
@@ -161,13 +164,13 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" || r.Method == "HEAD" {
 		for _, ext := range this.StaticFileType {
 			if strings.HasSuffix(urlPath, ext) {
-				http.ServeFile(w, r, urlPath[1:])
+				http.ServeFile(w, r, filepath.Join(AppRoot, urlPath))
 				return
 			}
 		}
 		for sPath, fPath := range this.StaticDir {
 			if strings.HasPrefix(urlPath, sPath) {
-				file := fPath + urlPath[len(sPath):]
+				file := filepath.Join(AppRoot, fPath+urlPath[len(sPath):])
 				http.ServeFile(w, r, file)
 				return
 			}

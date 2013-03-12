@@ -47,6 +47,7 @@ func (this *xgoConfig) loadConfig(cfg interface{}) error {
 }
 
 type xgoDefaultConfig struct {
+	AppRoot           string
 	ListenAddr        string
 	ListenPort        int
 	RunMode           string
@@ -63,6 +64,7 @@ type xgoDefaultConfig struct {
 }
 
 func (this *xgoDefaultConfig) OnLoaded() {
+	AppRoot = this.AppRoot
 	ListenAddr = this.ListenAddr
 	ListenPort = this.ListenPort
 	RunMode = this.RunMode

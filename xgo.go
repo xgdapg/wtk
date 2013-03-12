@@ -2,15 +2,17 @@ package xgo
 
 import (
 	"os"
+	"path/filepath"
 )
 
 var (
 	app               *xgoApp
 	apps              map[int]*xgoApp
 	appIdGen          *AutoIncr
-	util              xgoUtil
+	util              *xgoUtil
 	cfg               *xgoConfig
 	cfgFile           string
+	AppRoot           string
 	ListenAddr        string
 	ListenPort        int
 	RunMode           string
@@ -27,7 +29,13 @@ var (
 )
 
 func init() {
+	util = &xgoUtil{}
+	AppRoot, err := os.Getwd()
+	if err != nil {
+		AppRoot = util.getDefaultRootPath()
+	}
 	defaultCfg := &xgoDefaultConfig{
+		AppRoot:           AppRoot,
 		ListenAddr:        "",
 		ListenPort:        80,
 		RunMode:           "http",
@@ -43,7 +51,7 @@ func init() {
 		SslCertificateKey: "",
 	}
 
-	cfgFile = "app.conf"
+	cfgFile = filepath.Join(AppRoot, "app.conf")
 	// Check the first argument of cmd line,
 	// if it is not a flag (begin with '-'),
 	// try to use it as the config file path.
@@ -60,7 +68,6 @@ func init() {
 	apps = make(map[int]*xgoApp)
 	appIdGen = NewAutoIncr(1, 1)
 	app = NewApp()
-	util = xgoUtil{}
 }
 
 func NewApp() *xgoApp {
@@ -86,8 +93,8 @@ func SetStaticPath(sPath, fPath string) {
 	app.SetStaticPath(sPath, fPath)
 }
 
-func SetStaticFileType(ext string) {
-	app.SetStaticFileType(ext)
+func SetStaticFileType(ext ...string) {
+	app.SetStaticFileType(ext...)
 }
 
 func RegisterSessionStorage(storage SessionStorageInterface) {
