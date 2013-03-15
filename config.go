@@ -43,6 +43,7 @@ func (this *xgoConfig) loadConfig(cfg interface{}) error {
 		util.CallMethod(cfg, "OnLoaded")
 		return nil
 	}
+	util.CallMethod(cfg, "OnLoaded")
 	return errors.New("config file is not loaded")
 }
 

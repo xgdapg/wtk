@@ -35,7 +35,7 @@ func (this *xgoTemplate) GetVar(name string) interface{} {
 
 func (this *xgoTemplate) SetTemplateString(str string) bool {
 	this.tpl = template.New("")
-	this.tpl.Parse(str)
+	this.tpl.Funcs(tplFuncMap).Parse(str)
 	return true
 }
 
@@ -52,7 +52,7 @@ func (this *xgoTemplate) SetSubTemplateString(name, str string) bool {
 		return false
 	}
 	tpl := this.tpl.New(name)
-	tpl.Parse(`{{define "` + name + `"}}` + str + `{{end}}`)
+	tpl.Funcs(tplFuncMap).Parse(`{{define "` + name + `"}}` + str + `{{end}}`)
 	return true
 }
 
@@ -79,7 +79,6 @@ func (this *xgoTemplate) Parse() bool {
 	}
 
 	this.tplResult = &xgoTemplateResult{data: []byte{}}
-	this.tpl.Funcs(tplFuncMap)
 	err := this.tpl.Execute(this.tplResult, this.Vars)
 	if err != nil {
 		return false
