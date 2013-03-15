@@ -6,13 +6,19 @@ import (
 )
 
 var tplFuncMap template.FuncMap
+var tplVars map[string]interface{}
 
 func init() {
 	tplFuncMap = make(template.FuncMap)
+	tplVars = make(map[string]interface{})
 }
 
 func AddTemplateFunc(name string, tplFunc interface{}) {
 	tplFuncMap[name] = tplFunc
+}
+
+func SetTemplateVar(name string, value interface{}) {
+	tplVars[name] = value
 }
 
 type xgoTemplate struct {

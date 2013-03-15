@@ -30,6 +30,9 @@ func (this *Handler) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *
 	this.Context.hdlr = this
 	this.Template = tpl
 	this.Template.hdlr = this
+	for n, v := range tplVars {
+		tpl.SetVar(n, v)
+	}
 	this.Session = sess
 	this.Session.hdlr = this
 }
