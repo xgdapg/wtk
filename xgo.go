@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	app               *xgoApp
-	apps              map[int]*xgoApp
-	appIdGen          *AutoIncr
+	app               *App
+	apps              map[int]*App
+	appIdGen          *xgoAutoIncr
 	util              *xgoUtil
 	cfg               *xgoConfig
 	cfgFile           string
@@ -65,23 +65,23 @@ func init() {
 	cfg = &xgoConfig{}
 	cfg.LoadFile(cfgFile)
 	cfg.RegisterConfig(defaultCfg)
-	apps = make(map[int]*xgoApp)
-	appIdGen = NewAutoIncr(1, 1)
+	apps = make(map[int]*App)
+	appIdGen = newAutoIncr(1, 1)
 	app = NewApp()
 }
 
-func NewApp() *xgoApp {
+func NewApp() *App {
 	id := appIdGen.Fetch()
-	a := new(xgoApp).init(id)
+	a := new(App).init(id)
 	apps[id] = a
 	return a
 }
 
-func GetMainApp() *xgoApp {
+func GetMainApp() *App {
 	return app
 }
 
-func RegisterHandler(pattern string, c xgoHandlerInterface) {
+func RegisterHandler(pattern string, c HandlerInterface) {
 	app.RegisterHandler(pattern, c)
 }
 

@@ -16,79 +16,79 @@ import (
 	"time"
 )
 
-type xgoContext struct {
-	hdlr     *Handler
-	Response *xgoResponseWriter
-	Request  *http.Request
+type Context struct {
+	hdlr           *Handler
+	response       *xgoResponseWriter
+	ResponseWriter http.ResponseWriter
+	Request        *http.Request
 }
 
-func (this *xgoContext) Finish() {
-	this.Response.Finished = true
-	this.Response.Close()
+func (this *Context) finish() {
+	this.response.Finished = true
+	this.response.Close()
 }
 
-func (this *xgoContext) WriteString(content string) {
+func (this *Context) WriteString(content string) {
 	this.WriteBytes([]byte(content))
 }
 
-func (this *xgoContext) WriteBytes(content []byte) {
-	if this.Response.Closed {
+func (this *Context) WriteBytes(content []byte) {
+	if this.response.Closed {
 		return
 	}
 	hc := this.hdlr.getHookHandler()
 	this.hdlr.app.callHandlerHook("BeforeOutput", hc)
-	if this.Response.Finished {
+	if this.response.Finished {
 		return
 	}
 
 	this.SetHeader("Content-Type", http.DetectContentType(content))
 
-	this.Response.Write(content)
+	this.response.Write(content)
 
 	this.hdlr.app.callHandlerHook("AfterOutput", hc)
-	if this.Response.Finished {
+	if this.response.Finished {
 		return
 	}
-	this.Response.Close()
+	this.response.Close()
 }
 
-func (this *xgoContext) Abort(status int, content string) {
-	this.Response.WriteHeader(status)
+func (this *Context) Abort(status int, content string) {
+	this.response.WriteHeader(status)
 	this.WriteString(content)
-	this.Finish()
+	this.finish()
 }
 
-func (this *xgoContext) Redirect(status int, url string) {
-	this.SetHeader("Location", url)
-	this.Response.WriteHeader(status)
-	this.Finish()
+func (this *Context) Redirect(status int, url string) {
+	http.Redirect(this.response, this.Request, url, status)
+	this.finish()
 }
 
-func (this *xgoContext) RedirectUrl(url string) {
+func (this *Context) RedirectUrl(url string) {
 	this.Redirect(302, url)
 }
 
-func (this *xgoContext) NotModified() {
-	this.Response.WriteHeader(304)
-	this.Finish()
+func (this *Context) NotModified() {
+	this.response.WriteHeader(304)
+	this.finish()
 }
 
-func (this *xgoContext) NotFound() {
-	this.Response.WriteHeader(404)
-	this.Finish()
+func (this *Context) NotFound() {
+	this.response.WriteHeader(404)
+	this.finish()
 }
 
-func (this *xgoContext) SetHeader(name string, value string) {
-	this.Response.Header().Set(name, value)
+func (this *Context) SetHeader(name string, value string) {
+	this.response.Header().Set(name, value)
 }
 
-func (this *xgoContext) AddHeader(name string, value string) {
-	this.Response.Header().Add(name, value)
+func (this *Context) AddHeader(name string, value string) {
+	this.response.Header().Add(name, value)
 }
 
 //Sets the content type by extension, as defined in the mime package. 
-//For example, xgoContext.ContentType("json") sets the content-type to "application/json"
-func (this *xgoContext) SetContentType(ext string) {
+//For example, Context.ContentType("json") sets the content-type to "application/json"
+func (this *Context) SetContentType(ext string) {
 	if !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
@@ -99,7 +99,7 @@ func (this *xgoContext) SetContentType(ext string) {
 }
 
 //Sets a cookie -- duration is the amount of time in seconds. 0 = browser
-func (this *xgoContext) SetCookie(name string, value string, expires int64) {
+func (this *Context) SetCookie(name string, value string, expires int64) {
 	cookie := &http.Cookie{
 		Name:  name,
 		Value: value,
@@ -109,10 +109,10 @@ func (this *xgoContext) SetCookie(name string, value string, expires int64) {
 		d := time.Duration(expires) * time.Second
 		cookie.Expires = time.Now().Add(d)
 	}
-	http.SetCookie(this.Response, cookie)
+	http.SetCookie(this.response, cookie)
 }
 
-func (this *xgoContext) GetCookie(name string) string {
+func (this *Context) GetCookie(name string) string {
 	cookie, err := this.Request.Cookie(name)
 	if err != nil {
 		return ""
@@ -120,7 +120,7 @@ func (this *xgoContext) GetCookie(name string) string {
 	return cookie.Value
 }
 
-func (this *xgoContext) SetSecureCookie(name string, value string, expires int64) {
+func (this *Context) SetSecureCookie(name string, value string, expires int64) {
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	encoder.Write([]byte(value))
@@ -137,7 +137,7 @@ func (this *xgoContext) SetSecureCookie(name string, value string, expires int64
 	this.SetCookie(name, cookie, expires)
 }
 
-func (this *xgoContext) GetSecureCookie(name string) string {
+func (this *Context) GetSecureCookie(name string) string {
 	value := this.GetCookie(name)
 	if value == "" {
 		return ""
@@ -162,17 +162,17 @@ func (this *xgoContext) GetSecureCookie(name string) string {
 	return string(res)
 }
 
-func (this *xgoContext) GetParam(name string) string {
+func (this *Context) GetParam(name string) string {
 	return this.Request.Form.Get(name)
 }
 
-func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
+func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
 	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
 		return nil, errors.New("Incorrect method: " + this.Request.Method)
 	}
 	if this.Request.MultipartForm != nil && this.Request.MultipartForm.File != nil {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
-			uploadFile := &xgoUploadFile{
+			uploadFile := &UploadFile{
 				Filename:   fhs[0].Filename,
 				fileHeader: fhs[0],
 			}
@@ -182,12 +182,12 @@ func (this *xgoContext) GetUploadFile(name string) (*xgoUploadFile, error) {
 	return nil, http.ErrMissingFile
 }
 
-type xgoUploadFile struct {
+type UploadFile struct {
 	Filename   string
 	fileHeader *multipart.FileHeader
 }
 
-func (this *xgoUploadFile) SaveFile(savePath string) error {
+func (this *UploadFile) SaveFile(savePath string) error {
 	file, err := this.fileHeader.Open()
 	if err != nil {
 		return err
@@ -205,11 +205,11 @@ func (this *xgoUploadFile) SaveFile(savePath string) error {
 	return nil
 }
 
-func (this *xgoUploadFile) GetContentType() string {
+func (this *UploadFile) GetContentType() string {
 	return this.fileHeader.Header.Get("Content-Type")
 }
 
-func (this *xgoUploadFile) GetRawContentType() string {
+func (this *UploadFile) GetRawContentType() string {
 	file, err := this.fileHeader.Open()
 	if err != nil {
 		return ""

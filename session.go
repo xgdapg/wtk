@@ -53,15 +53,15 @@ func (this *xgoSessionManager) Delete(sid string) {
 	this.sessionStorage.Delete(sid)
 }
 
-type xgoSession struct {
+type Session struct {
 	hdlr           *Handler
 	sessionManager *xgoSessionManager
 	sessionId      string
-	ctx            *xgoContext
+	ctx            *Context
 	data           map[string]string
 }
 
-func (this *xgoSession) init() {
+func (this *Session) init() {
 	if this.sessionId == "" {
 		this.sessionId = this.sessionManager.CreateSessionID()
 		this.ctx.SetSecureCookie(SessionName, this.sessionId, 0)
@@ -71,7 +71,7 @@ func (this *xgoSession) init() {
 	}
 }
 
-func (this *xgoSession) Get(key string) string {
+func (this *Session) Get(key string) string {
 	this.init()
 	if data, exist := this.data[key]; exist {
 		return data
@@ -79,13 +79,13 @@ func (this *xgoSession) Get(key string) string {
 	return ""
 }
 
-func (this *xgoSession) Set(key string, data string) {
+func (this *Session) Set(key string, data string) {
 	this.init()
 	this.data[key] = data
 	this.sessionManager.Set(this.sessionId, this.data)
 }
 
-func (this *xgoSession) Delete(key string) {
+func (this *Session) Delete(key string) {
 	this.init()
 	delete(this.data, key)
 	this.sessionManager.Set(this.sessionId, this.data)
@@ -94,7 +94,7 @@ func (this *xgoSession) Delete(key string) {
 type xgoDefaultSessionStorage struct {
 	ttl   int64
 	datas map[string]xgoDefaultSessionStorageData
-	incr  *AutoIncr
+	incr  *xgoAutoIncr
 }
 
 type xgoDefaultSessionStorageData struct {
@@ -109,7 +109,7 @@ func (this *xgoDefaultSessionStorage) Init(ttl int64) {
 	this.ttl = ttl
 	this.datas = make(map[string]xgoDefaultSessionStorageData)
 	go this.gc()
-	this.incr = NewAutoIncr(1, 1)
+	this.incr = newAutoIncr(1, 1)
 }
 
 func (this *xgoDefaultSessionStorage) gc() {

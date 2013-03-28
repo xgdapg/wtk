@@ -6,6 +6,9 @@ Xgo is a simple web framework to build webapp easily in Go.
 
     go get github.com/xgdapg/xgo
 
+## GoDoc
+[http://godoc.org/github.com/xgdapg/xgo](http://godoc.org/github.com/xgdapg/xgo)
+
 ## Example
 ```go
 package main

@@ -13,7 +13,7 @@ import (
 )
 
 type xgoResponseWriter struct {
-	app      *xgoApp
+	app      *App
 	writer   http.ResponseWriter
 	request  *http.Request
 	Closed   bool
@@ -86,7 +86,7 @@ type xgoRoutingRule struct {
 }
 
 type xgoRouter struct {
-	app            *xgoApp
+	app            *App
 	Rules          []*xgoRoutingRule
 	StaticRules    []*xgoRoutingRule
 	StaticDir      map[string]string
@@ -111,7 +111,7 @@ func (this *xgoRouter) SetStaticFileType(exts ...string) {
 	}
 }
 
-func (this *xgoRouter) AddRule(pattern string, c xgoHandlerInterface) error {
+func (this *xgoRouter) AddRule(pattern string, c HandlerInterface) error {
 	rule := &xgoRoutingRule{
 		Pattern:     "",
 		Regexp:      nil,
@@ -221,18 +221,19 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		r.ParseMultipartForm(0)
 	}
 	ci := reflect.New(routingRule.HandlerType).Interface()
-	ctx := &xgoContext{
-		hdlr:     nil,
-		Response: w,
-		Request:  r,
+	ctx := &Context{
+		hdlr:           nil,
+		response:       w,
+		ResponseWriter: w,
+		Request:        r,
 	}
-	tpl := &xgoTemplate{
+	tpl := &Template{
 		hdlr:      nil,
 		tpl:       nil,
 		Vars:      make(map[string]interface{}),
 		tplResult: nil,
 	}
-	sess := &xgoSession{
+	sess := &Session{
 		hdlr:           nil,
 		sessionManager: this.app.session,
 		sessionId:      ctx.GetSecureCookie(SessionName),

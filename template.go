@@ -21,31 +21,31 @@ func SetTemplateVar(name string, value interface{}) {
 	tplVars[name] = value
 }
 
-type xgoTemplate struct {
+type Template struct {
 	hdlr      *Handler
 	tpl       *template.Template
 	Vars      map[string]interface{}
 	tplResult *xgoTemplateResult
 }
 
-func (this *xgoTemplate) SetVar(name string, value interface{}) {
+func (this *Template) SetVar(name string, value interface{}) {
 	this.Vars[name] = value
 }
 
-func (this *xgoTemplate) GetVar(name string) interface{} {
+func (this *Template) GetVar(name string) interface{} {
 	if val, ok := this.Vars[name]; ok {
 		return val
 	}
 	return nil
 }
 
-func (this *xgoTemplate) SetTemplateString(str string) bool {
+func (this *Template) SetTemplateString(str string) bool {
 	this.tpl = template.New("")
 	this.tpl.Funcs(tplFuncMap).Parse(str)
 	return true
 }
 
-func (this *xgoTemplate) SetTemplateFile(filename string) bool {
+func (this *Template) SetTemplateFile(filename string) bool {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false
@@ -53,7 +53,7 @@ func (this *xgoTemplate) SetTemplateFile(filename string) bool {
 	return this.SetTemplateString(string(content))
 }
 
-func (this *xgoTemplate) SetSubTemplateString(name, str string) bool {
+func (this *Template) SetSubTemplateString(name, str string) bool {
 	if this.tpl == nil {
 		return false
 	}
@@ -62,7 +62,7 @@ func (this *xgoTemplate) SetSubTemplateString(name, str string) bool {
 	return true
 }
 
-func (this *xgoTemplate) SetSubTemplateFile(name, filename string) bool {
+func (this *Template) SetSubTemplateFile(name, filename string) bool {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false
@@ -70,7 +70,7 @@ func (this *xgoTemplate) SetSubTemplateFile(name, filename string) bool {
 	return this.SetSubTemplateString(name, string(content))
 }
 
-func (this *xgoTemplate) Parse() bool {
+func (this *Template) Parse() bool {
 	if this.tpl == nil {
 		return false
 	}
@@ -80,7 +80,7 @@ func (this *xgoTemplate) Parse() bool {
 
 	hc := this.hdlr.getHookHandler()
 	this.hdlr.app.callHandlerHook("BeforeRender", hc)
-	if this.hdlr.Context.Response.Finished {
+	if this.hdlr.Context.response.Finished {
 		return true
 	}
 
@@ -94,25 +94,25 @@ func (this *xgoTemplate) Parse() bool {
 	return true
 }
 
-func (this *xgoTemplate) GetResult() []byte {
+func (this *Template) GetResult() []byte {
 	if this.tplResult == nil {
 		return []byte{}
 	}
 	return this.tplResult.Bytes()
 }
 
-func (this xgoTemplate) GetResultString() string {
+func (this *Template) GetResultString() string {
 	return string(this.GetResult())
 }
 
-func (this *xgoTemplate) SetResult(p []byte) {
+func (this *Template) SetResult(p []byte) {
 	if this.tplResult == nil {
 		return
 	}
 	this.tplResult.SetBytes(p)
 }
 
-func (this *xgoTemplate) SetResultString(s string) {
+func (this *Template) SetResultString(s string) {
 	this.SetResult([]byte(s))
 }
 

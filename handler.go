@@ -4,8 +4,8 @@ import (
 	"net/http"
 )
 
-type xgoHandlerInterface interface {
-	Init(*xgoApp, *xgoContext, *xgoTemplate, *xgoSession, string)
+type HandlerInterface interface {
+	Init(*App, *Context, *Template, *Session, string)
 	Get()
 	Post()
 	Delete()
@@ -18,13 +18,13 @@ type xgoHandlerInterface interface {
 }
 
 type Handler struct {
-	app      *xgoApp
-	Context  *xgoContext
-	Template *xgoTemplate
-	Session  *xgoSession
+	app      *App
+	Context  *Context
+	Template *Template
+	Session  *Session
 }
 
-func (this *Handler) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *xgoSession, cn string) {
+func (this *Handler) Init(app *App, ctx *Context, tpl *Template, sess *Session, cn string) {
 	this.app = app
 	this.Context = ctx
 	this.Context.hdlr = this
@@ -38,31 +38,31 @@ func (this *Handler) Init(app *xgoApp, ctx *xgoContext, tpl *xgoTemplate, sess *
 }
 
 func (this *Handler) Get() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Post() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Delete() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Put() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Head() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Patch() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Options() {
-	http.Error(this.Context.Response, "Method Not Allowed", 405)
+	http.Error(this.Context.response, "Method Not Allowed", 405)
 }
 
 func (this *Handler) Render() {

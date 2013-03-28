@@ -23,14 +23,14 @@ const (
 )
 
 type xgoHook struct {
-	app          *xgoApp
+	app          *App
 	handlerHooks map[string][]HookHandlerFunc
 }
 
 type HookHandler struct {
-	Context  *xgoContext
-	Template *xgoTemplate
-	Session  *xgoSession
+	Context  *Context
+	Template *Template
+	Session  *Session
 }
 
 type HookHandlerFunc func(*HookHandler)
@@ -49,7 +49,7 @@ func (this *xgoHook) CallHandlerHook(event string, hc *HookHandler) {
 	if funcList, ok := this.handlerHooks[event]; ok {
 		for _, hookFunc := range funcList {
 			hookFunc(hc)
-			if hc.Context.Response.Finished {
+			if hc.Context.response.Finished {
 				return
 			}
 		}

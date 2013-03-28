@@ -68,14 +68,14 @@ func (this *xgoUtil) getDefaultRootPath() string {
 	return filepath.Dir(p)
 }
 
-type AutoIncr struct {
+type xgoAutoIncr struct {
 	start, step int
 	queue       chan int
 	running     bool
 }
 
-func NewAutoIncr(start, step int) (ai *AutoIncr) {
-	ai = &AutoIncr{
+func newAutoIncr(start, step int) (ai *xgoAutoIncr) {
+	ai = &xgoAutoIncr{
 		start:   start,
 		step:    step,
 		running: true,
@@ -85,18 +85,18 @@ func NewAutoIncr(start, step int) (ai *AutoIncr) {
 	return
 }
 
-func (ai *AutoIncr) process() {
+func (ai *xgoAutoIncr) process() {
 	defer func() { recover() }()
 	for i := ai.start; ai.running; i = i + ai.step {
 		ai.queue <- i
 	}
 }
 
-func (ai *AutoIncr) Fetch() int {
+func (ai *xgoAutoIncr) Fetch() int {
 	return <-ai.queue
 }
 
-func (ai *AutoIncr) Close() {
+func (ai *xgoAutoIncr) Close() {
 	ai.running = false
 	close(ai.queue)
 }
