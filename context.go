@@ -131,8 +131,7 @@ func (this *Context) SetSecureCookie(name string, value string, expires int64) {
 		d := time.Duration(expires) * time.Second
 		ts = strconv.FormatInt(time.Now().Add(d).Unix(), 10)
 	}
-
-	sig := util.getCookieSig(CookieSecret, name, vs, ts)
+	sig := util.getCookieSig(CookieSecret+this.Request.UserAgent()+strings.Split(this.Request.RemoteAddr, ":")[0], name, vs, ts)
 	cookie := strings.Join([]string{vs, ts, sig}, "|")
 	this.SetCookie(name, cookie, expires)
 }
@@ -149,7 +148,7 @@ func (this *Context) GetSecureCookie(name string) string {
 	val := parts[0]
 	timestamp := parts[1]
 	sig := parts[2]
-	if util.getCookieSig(CookieSecret, name, val, timestamp) != sig {
+	if util.getCookieSig(CookieSecret+this.Request.UserAgent()+strings.Split(this.Request.RemoteAddr, ":")[0], name, val, timestamp) != sig {
 		return ""
 	}
 	ts, _ := strconv.ParseInt(timestamp, 0, 64)
