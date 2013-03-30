@@ -51,8 +51,8 @@ type PageHandler struct {
 }
 
 func (this *PageHandler) Get() {
-	id := this.Context.GetParam(":id")
-	strPage := this.Context.GetParam(":page")
+	id := this.Context.GetVar(":id")
+	strPage := this.Context.GetVar(":page")
 	page := 0
 	if strPage != "" {
 		page, _ = strconv.Atoi(strPage)
@@ -125,68 +125,6 @@ Currently, there are only handler hooks, and the hook events are:
 	xgo.HookAfterRender        
 	xgo.HookBeforeOutput       
 	xgo.HookAfterOutput        
-
-## Handler
-#### Context
-  - Context.Response: http.ResponseWriter
-  - Context.Request: *http.Request
-  - Context.WriteString(content string)
-  - Context.WriteBytes(content []byte)
-  - Context.Abort(status int, content string)
-  - Context.Redirect(status int, url string)
-  - Context.RedirectUrl(url string)
-  - Context.SetHeader(name string, value string)
-  - Context.AddHeader(name string, value string)
-  - Context.SetContentType(ext string)
-  - Context.SetCookie(name string, value string, expires int64)
-  - Context.GetCookie(name string) string
-  - Context.SetSecureCookie(name string, value string, expires int64)
-  - Context.GetSecureCookie(name string) string
-  - Context.GetParam(name string) string
-  - Context.GetUploadFile(name string) (*xgoUploadFile, error)
-
-#### Template
-A simple example:
-
-	func (this *PageHandler) Get() {
-		this.Template.SetVar("Title", "The post title")
-		this.Template.SetVar("Content", "The post content")
-		this.Template.SetTemplateFile("post.tpl")
-	}
-Xgo will automatic call the Template.Parse() if you didn't call it.  
-
-use Template.SetSubTemplateFile if you need a sub-template inside the post.tpl:
-
-	func (this *PageHandler) Get() {
-		this.Template.SetVar("Title", "The post title")
-		this.Template.SetVar("Content", "The post content")
-		this.Template.SetTemplateFile("post.tpl")
-		this.Template.SetSubTemplateFile("footer", "post_footer.tpl")
-	}
-Maybe you want to fetch the parsed content and save it as a static html file:
-
-	func (this *PageHandler) Get() {
-		this.Template.SetVar("Title", "The post title")
-		this.Template.SetVar("Content", "The post content")
-		this.Template.SetTemplateFile("post.tpl")
-		this.Template.SetSubTemplateFile("footer", "post_footer.tpl")
-		this.Template.Parse()
-		content := this.Template.GetResultString()
-		writeTheContentToSomewhere(content)
-	}
-The methods of Template:
-  - xgo.AddTemplateFunc(name string, tplFunc interface{})
-  - Template.SetVar(name string, value interface{})
-  - Template.GetVar(name string) interface{}
-  - Template.SetTemplateString(str string) bool
-  - Template.SetTemplateFile(filename string) bool
-  - Template.SetSubTemplateString(name, str string) bool
-  - Template.SetSubTemplateFile(name, filename string) bool
-  - Template.Parse() bool
-  - Template.GetResult() []byte
-  - Template.GetResultString() string
-  - Template.SetResult(p []byte)
-  - Template.SetResultString(s string)
 
 #### Session
 Sessions are stored in memory by default.  

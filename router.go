@@ -216,10 +216,6 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.ParseForm()
-	if r.Method == "POST" || r.Method == "PUT" {
-		r.ParseMultipartForm(0)
-	}
 	ci := reflect.New(routingRule.HandlerType).Interface()
 	ctx := &Context{
 		hdlr:           nil,

@@ -161,15 +161,32 @@ func (this *Context) GetSecureCookie(name string) string {
 	return string(res)
 }
 
-func (this *Context) GetParam(name string) string {
+func (this *Context) GetVar(name string) string {
+	if this.Request.Form == nil {
+		this.Request.ParseForm()
+	}
 	return this.Request.Form.Get(name)
+}
+
+func (this *Context) GetVars(name string) []string {
+	if this.Request.Form == nil {
+		this.Request.ParseForm()
+	}
+	vs, ok := this.Request.Form[name]
+	if !ok || len(vs) == 0 {
+		return []string{}
+	}
+	return vs
 }
 
 func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
 	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
 		return nil, errors.New("Incorrect method: " + this.Request.Method)
 	}
-	if this.Request.MultipartForm != nil && this.Request.MultipartForm.File != nil {
+	if this.Request.MultipartForm == nil {
+		this.Request.ParseMultipartForm(0)
+	}
+	if this.Request.MultipartForm.File != nil {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
 			uploadFile := &UploadFile{
 				Filename:   fhs[0].Filename,
@@ -179,6 +196,28 @@ func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
 		}
 	}
 	return nil, http.ErrMissingFile
+}
+
+func (this *Context) GetUploadFiles(name string) ([]*UploadFile, error) {
+	uploadFiles := []*UploadFile{}
+	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
+		return uploadFiles, errors.New("Incorrect method: " + this.Request.Method)
+	}
+	if this.Request.MultipartForm == nil {
+		this.Request.ParseMultipartForm(0)
+	}
+	if this.Request.MultipartForm.File != nil {
+		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
+			for _, fh := range fhs {
+				uploadFiles = append(uploadFiles, &UploadFile{
+					Filename:   fh.Filename,
+					fileHeader: fh,
+				})
+			}
+			return uploadFiles, nil
+		}
+	}
+	return uploadFiles, http.ErrMissingFile
 }
 
 type UploadFile struct {
