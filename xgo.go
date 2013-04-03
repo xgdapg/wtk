@@ -81,20 +81,32 @@ func GetMainApp() *App {
 	return app
 }
 
-func RegisterHandler(pattern string, c HandlerInterface) {
-	app.RegisterHandler(pattern, c)
+func AddRoutingRule(pattern string, c HandlerInterface) {
+	app.AddRoutingRule(pattern, c)
 }
 
-func RegisterHandlerHook(event string, hookFunc HookHandlerFunc) {
-	app.RegisterHandlerHook(event, hookFunc)
+func RemoveRoutingRule(pattern string) {
+	app.RemoveRoutingRule(pattern)
 }
 
-func SetStaticPath(sPath, fPath string) {
-	app.SetStaticPath(sPath, fPath)
+func AddHandlerHook(event string, hookFunc HookHandlerFunc) {
+	app.AddHandlerHook(event, hookFunc)
 }
 
-func SetStaticFileType(ext ...string) {
-	app.SetStaticFileType(ext...)
+func AddStaticPath(sPath, fPath string) {
+	app.AddStaticPath(sPath, fPath)
+}
+
+func RemoveStaticPath(sPath string) {
+	app.RemoveStaticPath(sPath)
+}
+
+func AddStaticFileType(ext ...string) {
+	app.AddStaticFileType(ext...)
+}
+
+func RemoveStaticFileType(ext ...string) {
+	app.RemoveStaticFileType(ext...)
 }
 
 func RegisterSessionStorage(storage SessionStorageInterface) {

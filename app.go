@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
+	"reflect"
+	"sync"
 )
 
 type App struct {
@@ -21,10 +23,12 @@ type App struct {
 func (this *App) init(id int) *App {
 	this.Id = id
 	this.router = &xgoRouter{
-		app:         this,
-		Rules:       []*xgoRoutingRule{},
-		StaticRules: []*xgoRoutingRule{},
-		StaticDir:   make(map[string]string),
+		app:            this,
+		Rules:          []*xgoRoutingRule{},
+		StaticRules:    make(map[string]reflect.Type),
+		StaticDir:      make(map[string]string),
+		StaticFileType: make(map[string]int),
+		lock:           new(sync.Mutex),
 	}
 	this.hook = &xgoHook{app: this}
 	// this.extHook = &xgoHook{app: this}
@@ -34,11 +38,15 @@ func (this *App) init(id int) *App {
 	return this
 }
 
-func (this *App) RegisterHandler(pattern string, c HandlerInterface) {
+func (this *App) AddRoutingRule(pattern string, c HandlerInterface) {
 	this.router.AddRule(pattern, c)
 }
 
-func (this *App) RegisterHandlerHook(event string, hookFunc HookHandlerFunc) {
+func (this *App) RemoveRoutingRule(pattern string) {
+	this.router.RemoveRule(pattern)
+}
+
+func (this *App) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	this.hook.AddHandlerHook(event, hookFunc)
 }
 
@@ -55,12 +63,20 @@ func (this *App) callHandlerHook(event string, hc *HookHandler) {
 // 	this.extHook = &xgoHook{app: this}
 // }
 
-func (this *App) SetStaticPath(sPath, fPath string) {
-	this.router.SetStaticPath(sPath, fPath)
+func (this *App) AddStaticPath(sPath, fPath string) {
+	this.router.AddStaticPath(sPath, fPath)
 }
 
-func (this *App) SetStaticFileType(ext ...string) {
-	this.router.SetStaticFileType(ext...)
+func (this *App) RemoveStaticPath(sPath string) {
+	this.router.RemoveStaticPath(sPath)
+}
+
+func (this *App) AddStaticFileType(ext ...string) {
+	this.router.AddStaticFileType(ext...)
+}
+
+func (this *App) RemoveStaticFileType(ext ...string) {
+	this.router.RemoveStaticFileType(ext...)
 }
 
 func (this *App) RegisterSessionStorage(storage SessionStorageInterface) {

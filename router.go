@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type xgoResponseWriter struct {
@@ -88,37 +89,62 @@ type xgoRoutingRule struct {
 type xgoRouter struct {
 	app            *App
 	Rules          []*xgoRoutingRule
-	StaticRules    []*xgoRoutingRule
+	StaticRules    map[string]reflect.Type
 	StaticDir      map[string]string
-	StaticFileType []string
+	StaticFileType map[string]int
+	lock           *sync.Mutex
 }
 
-func (this *xgoRouter) SetStaticPath(sPath, fPath string) {
+func (this *xgoRouter) AddStaticPath(sPath, fPath string) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
 	this.StaticDir[sPath] = fPath
 }
 
-func (this *xgoRouter) SetStaticFileType(exts ...string) {
+func (this *xgoRouter) RemoveStaticPath(sPath string) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	delete(this.StaticDir, sPath)
+}
+
+func (this *xgoRouter) AddStaticFileType(exts ...string) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
 	for _, ext := range exts {
 		if ext[0] != '.' {
 			ext = "." + ext
 		}
-		for _, s := range this.StaticFileType {
-			if s == ext {
-				return
-			}
+		this.StaticFileType[ext] += 1
+	}
+}
+
+func (this *xgoRouter) RemoveStaticFileType(exts ...string) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	for _, ext := range exts {
+		if ext[0] != '.' {
+			ext = "." + ext
 		}
-		this.StaticFileType = append(this.StaticFileType, ext)
+		this.StaticFileType[ext] -= 1
+		if this.StaticFileType[ext] <= 0 {
+			delete(this.StaticFileType, ext)
+		}
 	}
 }
 
 func (this *xgoRouter) AddRule(pattern string, c HandlerInterface) error {
-	rule := &xgoRoutingRule{
-		Pattern:     "",
-		Regexp:      nil,
-		Params:      []string{},
-		HandlerType: reflect.Indirect(reflect.ValueOf(c)).Type(),
-	}
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	handlerType := reflect.Indirect(reflect.ValueOf(c)).Type()
 	paramCnt := strings.Count(pattern, ":")
+	if paramCnt != strings.Count(pattern, "(") || paramCnt != strings.Count(pattern, ")") {
+		paramCnt = 0
+	}
 	if paramCnt > 0 {
 		re, err := regexp.Compile(`:\w+\(.*?\)`)
 		if err != nil {
@@ -128,11 +154,17 @@ func (this *xgoRouter) AddRule(pattern string, c HandlerInterface) error {
 		if len(matches) != paramCnt {
 			return errors.New("Regexp match error")
 		}
+		rule := &xgoRoutingRule{
+			Pattern:     pattern,
+			Regexp:      nil,
+			Params:      []string{},
+			HandlerType: handlerType,
+		}
 		for _, match := range matches {
 			m := match[0]
 			index := strings.Index(m, "(")
 			rule.Params = append(rule.Params, m[0:index])
-			pattern = "^" + strings.Replace(pattern, m, m[index:], 1)
+			pattern = strings.Replace(pattern, m, m[index:], 1)
 		}
 		re, err = regexp.Compile(pattern)
 		if err != nil {
@@ -141,10 +173,34 @@ func (this *xgoRouter) AddRule(pattern string, c HandlerInterface) error {
 		rule.Regexp = re
 		this.Rules = append(this.Rules, rule)
 	} else {
-		rule.Pattern = pattern
-		this.StaticRules = append(this.StaticRules, rule)
+		this.StaticRules[pattern] = handlerType
 	}
 	return nil
+}
+
+func (this *xgoRouter) RemoveRule(pattern string) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	paramCnt := strings.Count(pattern, ":")
+	if paramCnt != strings.Count(pattern, "(") || paramCnt != strings.Count(pattern, ")") {
+		paramCnt = 0
+	}
+	if paramCnt > 0 {
+		length := len(this.Rules)
+		for i, rule := range this.Rules {
+			if rule.Pattern == pattern {
+				if i == length-1 {
+					this.Rules = this.Rules[:i]
+				} else {
+					this.Rules = append(this.Rules[:i], this.Rules[i+1:]...)
+				}
+				break
+			}
+		}
+	} else {
+		delete(this.StaticRules, pattern)
+	}
 }
 
 func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -155,15 +211,14 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Closed:   false,
 		Finished: false,
 	}
-	var routingRule *xgoRoutingRule
+	var handlerType reflect.Type
 	urlPath := r.URL.Path
-	pathLen := len(urlPath)
-	pathEnd := urlPath[pathLen-1]
 
 	//static file server
 	if r.Method == "GET" || r.Method == "HEAD" {
-		for _, ext := range this.StaticFileType {
-			if strings.HasSuffix(urlPath, ext) {
+		dotIndex := strings.LastIndex(urlPath, ".")
+		if dotIndex != -1 {
+			if _, ok := this.StaticFileType[urlPath[dotIndex:]]; ok {
 				http.ServeFile(w, r, filepath.Join(AppRoot, urlPath))
 				return
 			}
@@ -178,14 +233,11 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	//first find path from the fixrouters to Improve Performance
-	for _, rule := range this.StaticRules {
-		if urlPath == rule.Pattern || (pathEnd == '/' && urlPath[:pathLen-1] == rule.Pattern) {
-			routingRule = rule
-			break
-		}
+	if ht, ok := this.StaticRules[urlPath]; ok {
+		handlerType = ht
 	}
 
-	if routingRule == nil {
+	if handlerType == nil {
 		for _, rule := range this.Rules {
 			if !rule.Regexp.MatchString(urlPath) {
 				continue
@@ -206,17 +258,17 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				}
 				r.URL.RawQuery = values.Encode()
 			}
-			routingRule = rule
+			handlerType = rule.HandlerType
 			break
 		}
 	}
 
-	if routingRule == nil {
+	if handlerType == nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	ci := reflect.New(routingRule.HandlerType).Interface()
+	ci := reflect.New(handlerType).Interface()
 	ctx := &Context{
 		hdlr:           nil,
 		response:       w,
@@ -236,7 +288,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		ctx:            ctx,
 		data:           nil,
 	}
-	util.CallMethod(ci, "Init", this.app, ctx, tpl, sess, routingRule.HandlerType.Name())
+	util.CallMethod(ci, "Init", this.app, ctx, tpl, sess, handlerType.Name())
 	if w.Finished {
 		return
 	}

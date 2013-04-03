@@ -20,14 +20,14 @@ import (
 )
 
 func main() {
-	xgo.RegisterHandler("/", &IndexHandler{})
+	xgo.AddRoutingRule("/", &IndexHandler{})
 	// /post/id123 与 /post/id123-2 会被路由到同一个控制器进行处理。
 	// Both /post/id123 and /post/id123-2 will be routed to the same Handler.
-	xgo.RegisterHandler("/post/:id([0-9a-zA-Z]+)", &PageHandler{})
-	xgo.RegisterHandler("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PageHandler{})
+	xgo.AddRoutingRule("/post/:id([0-9a-zA-Z]+)", &PageHandler{})
+	xgo.AddRoutingRule("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PageHandler{})
 	// 注册一个钩子，当模板解析完成时会回调钩子函数进行处理。
 	// Register a hook, and while the template has been parsed, the hook will be called.
-	xgo.RegisterHandlerHook(xgo.HookAfterRender, func(c *xgo.HookHandler) {
+	xgo.AddHandlerHook(xgo.HookAfterRender, func(c *xgo.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/post") {
 			c.Template.SetResultString(c.Template.GetResultString() + "<div>append a footer</div>")
 		}
@@ -95,7 +95,7 @@ If you are using fcgi mode behind a web server (like nginx) which is also using 
 Xgo provides hook for us to control the request and response out of handler.  
 For example, if we need a user authorization in each admin page, we can register a hook like this:
 
-	xgo.RegisterHandlerHook(xgo.HookAfterInit, func(c *xgo.HookHandler) {
+	xgo.AddHandlerHook(xgo.HookAfterInit, func(c *xgo.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
 			succ := checkUser()
 			if !succ {
