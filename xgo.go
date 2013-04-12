@@ -93,12 +93,12 @@ func AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	app.AddHandlerHook(event, hookFunc)
 }
 
-func AddStaticPath(sPath, fPath string) {
-	app.AddStaticPath(sPath, fPath)
+func AddStaticFileDir(dirs ...string) {
+	app.AddStaticFileDir(dirs...)
 }
 
-func RemoveStaticPath(sPath string) {
-	app.RemoveStaticPath(sPath)
+func RemoveStaticFileDir(dirs ...string) {
+	app.RemoveStaticFileDir(dirs...)
 }
 
 func AddStaticFileType(ext ...string) {

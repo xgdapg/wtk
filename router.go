@@ -90,23 +90,30 @@ type xgoRouter struct {
 	app            *App
 	Rules          []*xgoRoutingRule
 	StaticRules    map[string]reflect.Type
-	StaticDir      map[string]string
+	StaticFileDir  map[string]int
 	StaticFileType map[string]int
 	lock           *sync.Mutex
 }
 
-func (this *xgoRouter) AddStaticPath(sPath, fPath string) {
+func (this *xgoRouter) AddStaticFileDir(dirs ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	this.StaticDir[sPath] = fPath
+	for _, dir := range dirs {
+		this.StaticFileDir[dir] += 1
+	}
 }
 
-func (this *xgoRouter) RemoveStaticPath(sPath string) {
+func (this *xgoRouter) RemoveStaticFileDir(dirs ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	delete(this.StaticDir, sPath)
+	for _, dir := range dirs {
+		this.StaticFileDir[dir] -= 1
+		if this.StaticFileDir[dir] <= 0 {
+			delete(this.StaticFileDir, dir)
+		}
+	}
 }
 
 func (this *xgoRouter) AddStaticFileType(exts ...string) {
@@ -223,10 +230,11 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		for sPath, fPath := range this.StaticDir {
-			if strings.HasPrefix(urlPath, sPath) {
-				file := filepath.Join(AppRoot, fPath+urlPath[len(sPath):])
-				http.ServeFile(w, r, file)
+		dir := urlPath[1:]
+		if slashIndex := strings.Index(dir, "/"); slashIndex > 0 {
+			dir := dir[:slashIndex]
+			if _, ok := this.StaticFileDir[dir]; ok {
+				http.ServeFile(w, r, filepath.Join(AppRoot, urlPath))
 				return
 			}
 		}

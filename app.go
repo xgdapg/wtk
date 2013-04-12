@@ -26,7 +26,7 @@ func (this *App) init(id int) *App {
 		app:            this,
 		Rules:          []*xgoRoutingRule{},
 		StaticRules:    make(map[string]reflect.Type),
-		StaticDir:      make(map[string]string),
+		StaticFileDir:  make(map[string]int),
 		StaticFileType: make(map[string]int),
 		lock:           new(sync.Mutex),
 	}
@@ -63,12 +63,12 @@ func (this *App) callHandlerHook(event string, hc *HookHandler) {
 // 	this.extHook = &xgoHook{app: this}
 // }
 
-func (this *App) AddStaticPath(sPath, fPath string) {
-	this.router.AddStaticPath(sPath, fPath)
+func (this *App) AddStaticFileDir(dirs ...string) {
+	this.router.AddStaticFileDir(dirs...)
 }
 
-func (this *App) RemoveStaticPath(sPath string) {
-	this.router.RemoveStaticPath(sPath)
+func (this *App) RemoveStaticFileDir(dirs ...string) {
+	this.router.RemoveStaticFileDir(dirs...)
 }
 
 func (this *App) AddStaticFileType(ext ...string) {
