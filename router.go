@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -301,6 +302,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	pathVars := make(url.Values)
 	if handlerType == nil {
 		slashCnt := strings.Count(urlPath, "/")
 		parts := strings.Split(urlPath, "/")
@@ -343,11 +345,9 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if paramCnt > 0 {
-				values := r.URL.Query()
 				for i, match := range matches {
-					values.Add(route.params[i], match)
+					pathVars.Add(route.params[i], match)
 				}
-				r.URL.RawQuery = values.Encode()
 			}
 			handlerType = route.handlerType
 			break
@@ -360,11 +360,15 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	ci := reflect.New(handlerType).Interface()
+
 	ctx := &Context{
 		hdlr:           nil,
 		response:       w,
 		ResponseWriter: w,
 		Request:        r,
+		pathVars:       pathVars,
+		queryVars:      nil,
+		formVars:       nil,
 	}
 	tpl := &Template{
 		hdlr:      nil,

@@ -10,6 +10,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -21,6 +22,59 @@ type Context struct {
 	response       *xgoResponseWriter
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
+	pathVars       url.Values
+	queryVars      url.Values
+	formVars       url.Values
+}
+
+func (this *Context) GetPathVar(name string) string {
+	return this.pathVars.Get(name)
+}
+
+func (this *Context) GetPathVars(name string) []string {
+	vs, ok := this.pathVars[name]
+	if !ok || len(vs) == 0 {
+		return []string{}
+	}
+	return vs
+}
+
+func (this *Context) GetQueryVar(name string) string {
+	if this.queryVars == nil {
+		this.queryVars = this.Request.URL.Query()
+	}
+	return this.queryVars.Get(name)
+}
+
+func (this *Context) GetQueryVars(name string) []string {
+	if this.queryVars == nil {
+		this.queryVars = this.Request.URL.Query()
+	}
+	vs, ok := this.queryVars[name]
+	if !ok || len(vs) == 0 {
+		return []string{}
+	}
+	return vs
+}
+
+func (this *Context) GetFormVar(name string) string {
+	if this.formVars == nil {
+		this.Request.ParseForm()
+		this.formVars = this.Request.Form
+	}
+	return this.formVars.Get(name)
+}
+
+func (this *Context) GetFormVars(name string) []string {
+	if this.formVars == nil {
+		this.Request.ParseForm()
+		this.formVars = this.Request.Form
+	}
+	vs, ok := this.formVars[name]
+	if !ok || len(vs) == 0 {
+		return []string{}
+	}
+	return vs
 }
 
 func (this *Context) finish() {
@@ -160,24 +214,6 @@ func (this *Context) GetSecureCookie(name string) string {
 	encoder := base64.NewDecoder(base64.StdEncoding, buf)
 	res, _ := ioutil.ReadAll(encoder)
 	return string(res)
-}
-
-func (this *Context) GetVar(name string) string {
-	if this.Request.Form == nil {
-		this.Request.ParseForm()
-	}
-	return this.Request.Form.Get(name)
-}
-
-func (this *Context) GetVars(name string) []string {
-	if this.Request.Form == nil {
-		this.Request.ParseForm()
-	}
-	vs, ok := this.Request.Form[name]
-	if !ok || len(vs) == 0 {
-		return []string{}
-	}
-	return vs
 }
 
 func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
