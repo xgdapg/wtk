@@ -51,8 +51,8 @@ type PageHandler struct {
 }
 
 func (this *PageHandler) Get() {
-	id := this.Context.GetVar("id")
-	strPage := this.Context.GetVar("page")
+	id := this.Context.GetPathVar("id")
+	strPage := this.Context.GetPathVar("page")
 	page := 0
 	if strPage != "" {
 		page, _ = strconv.Atoi(strPage)
