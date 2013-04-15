@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
-	"reflect"
 	"sync"
 )
 
@@ -24,8 +23,8 @@ func (this *App) init(id int) *App {
 	this.Id = id
 	this.router = &xgoRouter{
 		app:            this,
-		Rules:          []*xgoRoutingRule{},
-		StaticRules:    make(map[string]reflect.Type),
+		Routes:         []*Route{},
+		StaticRoutes:   make(map[string]*Route),
 		StaticFileDir:  make(map[string]int),
 		StaticFileType: make(map[string]int),
 		lock:           new(sync.Mutex),
@@ -38,12 +37,16 @@ func (this *App) init(id int) *App {
 	return this
 }
 
-func (this *App) AddRoutingRule(pattern string, c HandlerInterface) {
-	this.router.AddRule(pattern, c)
+func (this *App) AddRoute(pattern string, c HandlerInterface) *Route {
+	return this.router.AddRoute(pattern, c)
 }
 
-func (this *App) RemoveRoutingRule(pattern string) {
-	this.router.RemoveRule(pattern)
+func (this *App) RemoveRoute(pattern string) {
+	this.router.RemoveRoute(pattern)
+}
+
+func (this *App) SetPrefixPath(prefix string) {
+	this.router.SetPrefixPath(prefix)
 }
 
 func (this *App) AddHandlerHook(event string, hookFunc HookHandlerFunc) {

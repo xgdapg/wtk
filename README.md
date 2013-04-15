@@ -20,11 +20,11 @@ import (
 )
 
 func main() {
-	xgo.AddRoutingRule("/", &IndexHandler{})
+	xgo.AddRoute("/", &IndexHandler{})
 	// /post/id123 与 /post/id123-2 会被路由到同一个控制器进行处理。
 	// Both /post/id123 and /post/id123-2 will be routed to the same Handler.
-	xgo.AddRoutingRule("/post/:id([0-9a-zA-Z]+)", &PageHandler{})
-	xgo.AddRoutingRule("/post/:id([0-9a-zA-Z]+)-:page([0-9]+)", &PageHandler{})
+	xgo.AddRoute("/post/{id}", &PageHandler{})
+	xgo.AddRoute("/post/{id}-{page([0-9]+)}", &PageHandler{})
 	// 注册一个钩子，当模板解析完成时会回调钩子函数进行处理。
 	// Register a hook, and while the template has been parsed, the hook will be called.
 	xgo.AddHandlerHook(xgo.HookAfterRender, func(c *xgo.HookHandler) {
@@ -51,8 +51,8 @@ type PageHandler struct {
 }
 
 func (this *PageHandler) Get() {
-	id := this.Context.GetVar(":id")
-	strPage := this.Context.GetVar(":page")
+	id := this.Context.GetVar("id")
+	strPage := this.Context.GetVar("page")
 	page := 0
 	if strPage != "" {
 		page, _ = strconv.Atoi(strPage)

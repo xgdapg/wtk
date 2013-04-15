@@ -2,7 +2,6 @@ package xgo
 
 import (
 	"compress/gzip"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -79,19 +78,29 @@ func (this *xgoResponseWriter) Close() {
 	this.Closed = true
 }
 
-type xgoRoutingRule struct {
-	Pattern     string
-	Regexp      *regexp.Regexp
-	Params      []string
-	HandlerType reflect.Type
+type Route struct {
+	pattern     string
+	slashCnt    int
+	regexp      *regexp.Regexp
+	params      []string
+	staticParts []string
+	schemes     []string
+	handlerType reflect.Type
+}
+
+func (this *Route) Schemes(schemes ...string) {
+	for _, scheme := range schemes {
+		this.schemes = append(this.schemes, scheme)
+	}
 }
 
 type xgoRouter struct {
 	app            *App
-	Rules          []*xgoRoutingRule
-	StaticRules    map[string]reflect.Type
+	Routes         []*Route
+	StaticRoutes   map[string]*Route
 	StaticFileDir  map[string]int
 	StaticFileType map[string]int
+	PrefixPath     string
 	lock           *sync.Mutex
 }
 
@@ -143,71 +152,97 @@ func (this *xgoRouter) RemoveStaticFileType(exts ...string) {
 	}
 }
 
-func (this *xgoRouter) AddRule(pattern string, c HandlerInterface) error {
+func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
 	handlerType := reflect.Indirect(reflect.ValueOf(c)).Type()
-	paramCnt := strings.Count(pattern, ":")
-	if paramCnt != strings.Count(pattern, "(") || paramCnt != strings.Count(pattern, ")") {
+
+	if pattern[0] != '/' {
+		pattern = "/" + pattern
+	}
+	route := &Route{
+		pattern:     pattern,
+		slashCnt:    strings.Count(pattern, "/"),
+		regexp:      nil,
+		params:      []string{},
+		staticParts: strings.Split(pattern, "/"),
+		schemes:     []string{},
+		handlerType: handlerType,
+	}
+	paramCnt := strings.Count(pattern, "{")
+	if paramCnt != strings.Count(pattern, "}") {
 		paramCnt = 0
 	}
-	if paramCnt > 0 {
-		re, err := regexp.Compile(`:\w+\(.*?\)`)
+	if paramCnt == 0 {
+		this.StaticRoutes[pattern] = route
+	} else {
+		re, err := regexp.Compile(`\{\w+?\(.*?\)\}|\{\w+?\}`)
 		if err != nil {
-			return err
+			panic(err)
 		}
 		matches := re.FindAllStringSubmatch(pattern, paramCnt)
 		if len(matches) != paramCnt {
-			return errors.New("Regexp match error")
+			panic("Regexp match error")
 		}
-		rule := &xgoRoutingRule{
-			Pattern:     pattern,
-			Regexp:      nil,
-			Params:      []string{},
-			HandlerType: handlerType,
+		for i, part := range route.staticParts {
+			if strings.Index(part, "{") >= 0 {
+				route.staticParts[i] = "/"
+			}
 		}
 		for _, match := range matches {
-			m := match[0]
+			m := match[0][1 : len(match[0])-1]
 			index := strings.Index(m, "(")
-			rule.Params = append(rule.Params, m[0:index])
-			pattern = strings.Replace(pattern, m, m[index:], 1)
+			if index == -1 {
+				index = len(m)
+				m = m + "(.+)"
+			}
+			route.params = append(route.params, m[0:index])
+			pattern = strings.Replace(pattern, match[0], m[index:], 1)
 		}
 		re, err = regexp.Compile(pattern)
 		if err != nil {
-			return err
+			panic(err)
 		}
-		rule.Regexp = re
-		this.Rules = append(this.Rules, rule)
-	} else {
-		this.StaticRules[pattern] = handlerType
+		route.regexp = re
+		this.Routes = append(this.Routes, route)
 	}
-	return nil
+	return route
 }
 
-func (this *xgoRouter) RemoveRule(pattern string) {
+func (this *xgoRouter) RemoveRoute(pattern string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
-	paramCnt := strings.Count(pattern, ":")
-	if paramCnt != strings.Count(pattern, "(") || paramCnt != strings.Count(pattern, ")") {
+	paramCnt := strings.Count(pattern, "{")
+	if paramCnt != strings.Count(pattern, "}") {
 		paramCnt = 0
 	}
 	if paramCnt > 0 {
-		length := len(this.Rules)
-		for i, rule := range this.Rules {
-			if rule.Pattern == pattern {
+		length := len(this.Routes)
+		for i, route := range this.Routes {
+			if route.pattern == pattern {
 				if i == length-1 {
-					this.Rules = this.Rules[:i]
+					this.Routes = this.Routes[:i]
 				} else {
-					this.Rules = append(this.Rules[:i], this.Rules[i+1:]...)
+					this.Routes = append(this.Routes[:i], this.Routes[i+1:]...)
 				}
 				break
 			}
 		}
 	} else {
-		delete(this.StaticRules, pattern)
+		delete(this.StaticRoutes, pattern)
 	}
+}
+
+func (this *xgoRouter) SetPrefixPath(prefix string) {
+	if prefix[0] != '/' {
+		prefix = "/" + prefix
+	}
+	if prefix[len(prefix)-1] == '/' {
+		prefix = prefix[:len(prefix)-1]
+	}
+	this.PrefixPath = prefix
 }
 
 func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -219,8 +254,16 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Finished: false,
 	}
 	var handlerType reflect.Type
-	urlPath := r.URL.Path
 
+	if this.PrefixPath != "" {
+		if !strings.HasPrefix(r.URL.Path, this.PrefixPath+"/") {
+			http.NotFound(w, r)
+			return
+		}
+		r.URL.Path = r.URL.Path[len(this.PrefixPath):]
+	}
+	urlPath := r.URL.Path
+	urlScheme := r.URL.Scheme
 	//static file server
 	if r.Method == "GET" || r.Method == "HEAD" {
 		dotIndex := strings.LastIndex(urlPath, ".")
@@ -241,32 +284,72 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	//first find path from the fixrouters to Improve Performance
-	if ht, ok := this.StaticRules[urlPath]; ok {
-		handlerType = ht
+	if route, ok := this.StaticRoutes[urlPath]; ok {
+		if len(route.schemes) > 0 {
+			ok := false
+			for _, scheme := range route.schemes {
+				if urlScheme == scheme {
+					ok = true
+					break
+				}
+			}
+			if ok {
+				handlerType = route.handlerType
+			}
+		} else {
+			handlerType = route.handlerType
+		}
 	}
 
 	if handlerType == nil {
-		for _, rule := range this.Rules {
-			if !rule.Regexp.MatchString(urlPath) {
+		slashCnt := strings.Count(urlPath, "/")
+		parts := strings.Split(urlPath, "/")
+		for _, route := range this.Routes {
+			if slashCnt != route.slashCnt {
 				continue
 			}
-			matches := rule.Regexp.FindStringSubmatch(urlPath)
+			ok := true
+			for i, part := range route.staticParts {
+				if part != "/" && part != parts[i] {
+					ok = false
+					break
+				}
+			}
+			if !ok {
+				continue
+			}
+			if len(route.schemes) > 0 {
+				ok := false
+				for _, scheme := range route.schemes {
+					if urlScheme == scheme {
+						ok = true
+						break
+					}
+				}
+				if !ok {
+					continue
+				}
+			}
+			if !route.regexp.MatchString(urlPath) {
+				continue
+			}
+			matches := route.regexp.FindStringSubmatch(urlPath)
 			if matches[0] != urlPath {
 				continue
 			}
 			matches = matches[1:]
-			paramCnt := len(rule.Params)
+			paramCnt := len(route.params)
 			if paramCnt != len(matches) {
 				continue
 			}
 			if paramCnt > 0 {
 				values := r.URL.Query()
 				for i, match := range matches {
-					values.Add(rule.Params[i], match)
+					values.Add(route.params[i], match)
 				}
 				r.URL.RawQuery = values.Encode()
 			}
-			handlerType = rule.HandlerType
+			handlerType = route.handlerType
 			break
 		}
 	}

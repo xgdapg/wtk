@@ -60,7 +60,8 @@ func (this *Context) Abort(status int, content string) {
 }
 
 func (this *Context) Redirect(status int, url string) {
-	http.Redirect(this.response, this.Request, url, status)
+	prefix := this.hdlr.app.router.PrefixPath
+	http.Redirect(this.response, this.Request, prefix+url, status)
 	this.finish()
 }
 

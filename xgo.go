@@ -81,12 +81,16 @@ func GetMainApp() *App {
 	return app
 }
 
-func AddRoutingRule(pattern string, c HandlerInterface) {
-	app.AddRoutingRule(pattern, c)
+func AddRoute(pattern string, c HandlerInterface) *Route {
+	return app.AddRoute(pattern, c)
 }
 
-func RemoveRoutingRule(pattern string) {
-	app.RemoveRoutingRule(pattern)
+func RemoveRoute(pattern string) {
+	app.RemoveRoute(pattern)
+}
+
+func SetPrefixPath(prefix string) {
+	app.SetPrefixPath(prefix)
 }
 
 func AddHandlerHook(event string, hookFunc HookHandlerFunc) {
