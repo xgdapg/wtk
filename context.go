@@ -141,7 +141,7 @@ func (this *Context) AddHeader(name string, value string) {
 	this.response.Header().Add(name, value)
 }
 
-//Sets the content type by extension, as defined in the mime package. 
+//Sets the content type by extension, as defined in the mime package.
 //For example, Context.ContentType("json") sets the content-type to "application/json"
 func (this *Context) SetContentType(ext string) {
 	if !strings.HasPrefix(ext, ".") {
@@ -176,6 +176,12 @@ func (this *Context) GetCookie(name string) string {
 }
 
 func (this *Context) SetSecureCookie(name string, value string, expires int64) {
+	cookie := &http.Cookie{
+		Name:     name,
+		Path:     "/",
+		HttpOnly: true,
+	}
+
 	var buf bytes.Buffer
 	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
 	encoder.Write([]byte(value))
@@ -184,11 +190,12 @@ func (this *Context) SetSecureCookie(name string, value string, expires int64) {
 	ts := "0"
 	if expires > 0 {
 		d := time.Duration(expires) * time.Second
-		ts = strconv.FormatInt(time.Now().Add(d).Unix(), 10)
+		cookie.Expires = time.Now().Add(d)
+		ts = strconv.FormatInt(cookie.Expires.Unix(), 10)
 	}
 	sig := util.getCookieSig(CookieSecret+this.Request.UserAgent()+strings.Split(this.Request.RemoteAddr, ":")[0], name, vs, ts)
-	cookie := strings.Join([]string{vs, ts, sig}, "|")
-	this.SetCookie(name, cookie, expires)
+	cookie.Value = strings.Join([]string{vs, ts, sig}, "|")
+	http.SetCookie(this.response, cookie)
 }
 
 func (this *Context) GetSecureCookie(name string) string {
