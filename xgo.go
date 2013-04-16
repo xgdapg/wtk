@@ -22,6 +22,7 @@ var (
 	SessionTTL        int64
 	EnablePprof       bool
 	EnableGzip        bool
+	EnableRouteCache  bool
 	GzipMinLength     int
 	GzipTypes         []string
 	SslCertificate    string
@@ -45,6 +46,7 @@ func init() {
 		SessionTTL:        60 * 15,
 		EnablePprof:       true,
 		EnableGzip:        true,
+		EnableRouteCache:  true,
 		GzipMinLength:     1024,
 		GzipTypes:         []string{"text", "javascript", "css", "xml"},
 		SslCertificate:    "",

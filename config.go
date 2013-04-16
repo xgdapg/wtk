@@ -58,6 +58,7 @@ type xgoDefaultConfig struct {
 	SessionTTL        int64
 	EnablePprof       bool
 	EnableGzip        bool
+	EnableRouteCache  bool
 	GzipMinLength     int
 	GzipTypes         []string
 	SslCertificate    string
@@ -75,6 +76,7 @@ func (this *xgoDefaultConfig) OnLoaded() {
 	SessionTTL = this.SessionTTL
 	EnablePprof = this.EnablePprof
 	EnableGzip = this.EnableGzip
+	EnableRouteCache = this.EnableRouteCache
 	GzipMinLength = this.GzipMinLength
 	GzipTypes = this.GzipTypes
 	SslCertificate = this.SslCertificate

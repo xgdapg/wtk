@@ -28,6 +28,7 @@ func (this *App) init(id int) *App {
 		StaticFileDir:  make(map[string]int),
 		StaticFileType: make(map[string]int),
 		lock:           new(sync.Mutex),
+		routeCache:     make(map[string]*xgoRouteCache),
 	}
 	this.hook = &xgoHook{app: this}
 	// this.extHook = &xgoHook{app: this}

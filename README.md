@@ -1,6 +1,5 @@
 ## Xgo
-Xgo是一个以简化web开发为目的的Go语言web框架。  
-Xgo is a simple web framework to build webapp easily in Go.  
+Xgo is a simple web toolkit to build webapp easily in Go.  
 
 ## Installation
 

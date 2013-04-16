@@ -84,15 +84,17 @@ type Route struct {
 	slashCnt    int
 	regexp      *regexp.Regexp
 	params      []string
-	staticParts []string
-	schemes     []string
+	scheme      string
 	handlerType reflect.Type
 }
 
-func (this *Route) Schemes(schemes ...string) {
-	for _, scheme := range schemes {
-		this.schemes = append(this.schemes, scheme)
-	}
+func (this *Route) Scheme(scheme string) {
+	this.scheme = scheme
+}
+
+type xgoRouteCache struct {
+	Route *Route
+	Vars  url.Values
 }
 
 type xgoRouter struct {
@@ -103,6 +105,11 @@ type xgoRouter struct {
 	StaticFileType map[string]int
 	PrefixPath     string
 	lock           *sync.Mutex
+	routeCache     map[string]*xgoRouteCache
+}
+
+func (this *xgoRouter) ClearRouteCache() {
+	this.routeCache = make(map[string]*xgoRouteCache)
 }
 
 func (this *xgoRouter) AddStaticFileDir(dirs ...string) {
@@ -167,8 +174,7 @@ func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 		slashCnt:    strings.Count(pattern, "/"),
 		regexp:      nil,
 		params:      []string{},
-		staticParts: strings.Split(pattern, "/"),
-		schemes:     []string{},
+		scheme:      "",
 		handlerType: handlerType,
 	}
 	paramCnt := strings.Count(pattern, "{")
@@ -186,17 +192,12 @@ func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 		if len(matches) != paramCnt {
 			panic("Regexp match error")
 		}
-		for i, part := range route.staticParts {
-			if strings.Index(part, "{") >= 0 {
-				route.staticParts[i] = "/"
-			}
-		}
 		for _, match := range matches {
 			m := match[0][1 : len(match[0])-1]
 			index := strings.Index(m, "(")
 			if index == -1 {
 				index = len(m)
-				m = m + "(.+)"
+				m = m + "([^/]+)"
 			}
 			route.params = append(route.params, m[0:index])
 			pattern = strings.Replace(pattern, match[0], m[index:], 1)
@@ -207,6 +208,9 @@ func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 		}
 		route.regexp = re
 		this.Routes = append(this.Routes, route)
+		if EnableRouteCache {
+			this.ClearRouteCache()
+		}
 	}
 	return route
 }
@@ -230,6 +234,9 @@ func (this *xgoRouter) RemoveRoute(pattern string) {
 				}
 				break
 			}
+		}
+		if EnableRouteCache {
+			this.ClearRouteCache()
 		}
 	} else {
 		delete(this.StaticRoutes, pattern)
@@ -284,53 +291,27 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//first find path from the fixrouters to Improve Performance
 	if route, ok := this.StaticRoutes[urlPath]; ok {
-		if len(route.schemes) > 0 {
-			ok := false
-			for _, scheme := range route.schemes {
-				if urlScheme == scheme {
-					ok = true
-					break
-				}
-			}
-			if ok {
-				handlerType = route.handlerType
-			}
-		} else {
+		if route.scheme == "" || urlScheme == route.scheme {
 			handlerType = route.handlerType
 		}
 	}
 
 	pathVars := make(url.Values)
+	if EnableRouteCache {
+		if rc, ok := this.routeCache[urlPath]; ok {
+			handlerType = rc.Route.handlerType
+			pathVars = rc.Vars
+		}
+	}
 	if handlerType == nil {
 		slashCnt := strings.Count(urlPath, "/")
-		parts := strings.Split(urlPath, "/")
 		for _, route := range this.Routes {
 			if slashCnt != route.slashCnt {
 				continue
 			}
-			ok := true
-			for i, part := range route.staticParts {
-				if part != "/" && part != parts[i] {
-					ok = false
-					break
-				}
-			}
-			if !ok {
+			if route.scheme != "" && urlScheme != route.scheme {
 				continue
-			}
-			if len(route.schemes) > 0 {
-				ok := false
-				for _, scheme := range route.schemes {
-					if urlScheme == scheme {
-						ok = true
-						break
-					}
-				}
-				if !ok {
-					continue
-				}
 			}
 			if !route.regexp.MatchString(urlPath) {
 				continue
@@ -350,6 +331,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				}
 			}
 			handlerType = route.handlerType
+			if EnableRouteCache {
+				this.routeCache[urlPath] = &xgoRouteCache{
+					Route: route,
+					Vars:  pathVars,
+				}
+			}
 			break
 		}
 	}
