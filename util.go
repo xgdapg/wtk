@@ -1,8 +1,11 @@
 package xgo
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,15 +34,25 @@ func (this *xgoUtil) CallMethod(i interface{}, name string, args ...interface{})
 	return false
 }
 
-func (this *xgoUtil) getCookieSig(secret, name, value, timestamp string) string {
+func (this *xgoUtil) getCookieSig(secret, text string) string {
 	hm := hmac.New(sha1.New, []byte(secret))
-	hm.Write([]byte(value))
-	hm.Write([]byte(name))
-	hm.Write([]byte(timestamp))
+	hm.Write([]byte(text))
 	hex := fmt.Sprintf("%02x", hm.Sum(nil))
 	return hex
 }
+func (this *xgoUtil) AesEncrypt(secret, text []byte) []byte {
+	h := sha256.New()
+	h.Write(secret)
+	key := h.Sum(nil)
+	block, _ := aes.NewCipher(key)
+	stream := cipher.NewCTR(block, key[:block.BlockSize()])
+	stream.XORKeyStream(text, text)
+	return text
+}
 
+func (this *xgoUtil) AesDecrypt(secret, text []byte) []byte {
+	return this.AesEncrypt(secret, text)
+}
 func (this *xgoUtil) GetAppPath() (string, error) {
 	cmd := os.Args[0]
 	p, err := filepath.Abs(cmd)

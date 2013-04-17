@@ -2,11 +2,9 @@ package xgo
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -182,45 +180,61 @@ func (this *Context) SetSecureCookie(name string, value string, expires int64) {
 		HttpOnly: true,
 	}
 
-	var buf bytes.Buffer
-	encoder := base64.NewEncoder(base64.StdEncoding, &buf)
-	encoder.Write([]byte(value))
-	encoder.Close()
-	vs := buf.String()
 	ts := "0"
 	if expires > 0 {
 		d := time.Duration(expires) * time.Second
 		cookie.Expires = time.Now().Add(d)
 		ts = strconv.FormatInt(cookie.Expires.Unix(), 10)
 	}
-	sig := util.getCookieSig(CookieSecret+this.Request.UserAgent()+strings.Split(this.Request.RemoteAddr, ":")[0], name, vs, ts)
-	cookie.Value = strings.Join([]string{vs, ts, sig}, "|")
+	text := name + value + ts
+	text += this.Request.UserAgent()
+	text += strings.Split(this.Request.RemoteAddr, ":")[0]
+
+	sig := util.getCookieSig(CookieSecret, text)
+	val := base64.URLEncoding.EncodeToString(util.AesEncrypt([]byte(CookieSecret), []byte(ts+"|"+value)))
+	cookie.Value = sig + "|" + val
+
 	http.SetCookie(this.response, cookie)
 }
 
 func (this *Context) GetSecureCookie(name string) string {
-	value := this.GetCookie(name)
-	if value == "" {
+	str := this.GetCookie(name)
+	if str == "" {
 		return ""
 	}
-	parts := strings.SplitN(value, "|", 3)
-	if len(parts) != 3 {
+	strs := strings.SplitN(str, "|", 2)
+	if len(strs) != 2 {
 		return ""
 	}
-	val := parts[0]
-	timestamp := parts[1]
-	sig := parts[2]
-	if util.getCookieSig(CookieSecret+this.Request.UserAgent()+strings.Split(this.Request.RemoteAddr, ":")[0], name, val, timestamp) != sig {
+	sig := strs[0]
+	val := strs[1]
+	b, err := base64.URLEncoding.DecodeString(val)
+	if err != nil {
 		return ""
 	}
-	ts, _ := strconv.ParseInt(timestamp, 0, 64)
-	if ts > 0 && time.Now().Unix() > ts {
+	decrypted := string(util.AesDecrypt([]byte(CookieSecret), b))
+	if decrypted == "" {
 		return ""
 	}
-	buf := bytes.NewBufferString(val)
-	encoder := base64.NewDecoder(base64.StdEncoding, buf)
-	res, _ := ioutil.ReadAll(encoder)
-	return string(res)
+	parts := strings.SplitN(decrypted, "|", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	ts := parts[0]
+	value := parts[1]
+
+	text := name + value + ts
+	text += this.Request.UserAgent()
+	text += strings.Split(this.Request.RemoteAddr, ":")[0]
+
+	if util.getCookieSig(CookieSecret, text) != sig {
+		return ""
+	}
+	expires, err := strconv.ParseInt(ts, 0, 64)
+	if err != nil || expires > 0 && time.Now().Unix() > expires {
+		return ""
+	}
+	return value
 }
 
 func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
