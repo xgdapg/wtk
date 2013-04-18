@@ -152,17 +152,28 @@ func (this *Context) SetContentType(ext string) {
 }
 
 //Sets a cookie -- duration is the amount of time in seconds. 0 = browser
-func (this *Context) SetCookie(name string, value string, expires int64) {
+func (this *Context) SetCookieWithArgs(name string, value string, maxage int, path string, domain string, secure bool, httponly bool) {
 	cookie := &http.Cookie{
-		Name:  name,
-		Value: value,
-		Path:  "/",
+		Name:     name,
+		Value:    value,
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HttpOnly: httponly,
 	}
-	if expires > 0 {
-		d := time.Duration(expires) * time.Second
+	if maxage > 0 {
+		d := time.Duration(maxage) * time.Second
 		cookie.Expires = time.Now().Add(d)
+		cookie.MaxAge = maxage
+	}
+	if path == "" && this.hdlr.app.router.PrefixPath != "" {
+		cookie.Path = this.hdlr.app.router.PrefixPath
 	}
 	http.SetCookie(this.response, cookie)
+}
+
+func (this *Context) SetCookie(name string, value string, maxage int) {
+	this.SetCookieWithArgs(name, value, maxage, "", "", false, false)
 }
 
 func (this *Context) GetCookie(name string) string {
@@ -173,18 +184,12 @@ func (this *Context) GetCookie(name string) string {
 	return cookie.Value
 }
 
-func (this *Context) SetSecureCookie(name string, value string, expires int64) {
-	cookie := &http.Cookie{
-		Name:     name,
-		Path:     "/",
-		HttpOnly: true,
-	}
-
+func (this *Context) SetSecureCookieWithArgs(name string, value string, maxage int, path string, domain string, secure bool, httponly bool) {
 	ts := "0"
-	if expires > 0 {
-		d := time.Duration(expires) * time.Second
-		cookie.Expires = time.Now().Add(d)
-		ts = strconv.FormatInt(cookie.Expires.Unix(), 10)
+	if maxage > 0 {
+		d := time.Duration(maxage) * time.Second
+		t := time.Now().Add(d)
+		ts = strconv.FormatInt(t.Unix(), 10)
 	}
 	text := name + value + ts
 	text += this.Request.UserAgent()
@@ -192,9 +197,12 @@ func (this *Context) SetSecureCookie(name string, value string, expires int64) {
 
 	sig := util.getCookieSig(CookieSecret, text)
 	val := base64.URLEncoding.EncodeToString(util.AesEncrypt([]byte(CookieSecret), []byte(ts+"|"+value)))
-	cookie.Value = sig + "|" + val
 
-	http.SetCookie(this.response, cookie)
+	this.SetCookieWithArgs(name, sig+"|"+val, maxage, path, domain, secure, httponly)
+}
+
+func (this *Context) SetSecureCookie(name string, value string, maxage int) {
+	this.SetSecureCookieWithArgs(name, value, maxage, "", "", false, true)
 }
 
 func (this *Context) GetSecureCookie(name string) string {
