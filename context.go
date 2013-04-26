@@ -94,7 +94,7 @@ func (this *Context) WriteBytes(content []byte) {
 		return
 	}
 	this.SetHeader("Content-Type", http.DetectContentType(content))
-	if len(content) < GzipMinLength {
+	if EnableGzip && len(content) < GzipMinLength {
 		this.response.gzipWriter = nil
 	}
 	this.response.Write(content)
