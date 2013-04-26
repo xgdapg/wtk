@@ -2,7 +2,6 @@ package xgo
 
 import (
 	"compress/gzip"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -14,11 +13,11 @@ import (
 )
 
 type xgoResponseWriter struct {
-	app      *App
-	writer   http.ResponseWriter
-	request  *http.Request
-	Closed   bool
-	Finished bool
+	app        *App
+	writer     http.ResponseWriter
+	gzipWriter *gzip.Writer
+	Closed     bool
+	Finished   bool
 }
 
 func (this *xgoResponseWriter) Header() http.Header {
@@ -29,31 +28,12 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 	if this.Closed {
 		return 0, nil
 	}
-
-	var writer io.Writer = this.writer
-
-	useGzip := false
-	if EnableGzip &&
-		strings.Contains(this.request.Header.Get("Accept-Encoding"), "gzip") &&
-		len(p) >= GzipMinLength {
-		ctype := this.writer.Header().Get("Content-Type")
-		for _, t := range GzipTypes {
-			if strings.Contains(ctype, t) {
-				useGzip = true
-				break
-			}
-		}
-	}
-	if useGzip {
+	if this.gzipWriter != nil {
 		this.Header().Set("Content-Encoding", "gzip")
 		this.Header().Del("Content-Length")
-
-		gz := gzip.NewWriter(this.writer)
-		defer gz.Close()
-		writer = gz
+		return this.gzipWriter.Write(p)
 	}
-
-	return writer.Write(p)
+	return this.writer.Write(p)
 }
 
 func (this *xgoResponseWriter) WriteHeader(code int) {
@@ -253,13 +233,55 @@ func (this *xgoRouter) SetPrefixPath(prefix string) {
 	this.PrefixPath = prefix
 }
 
+func (this *xgoRouter) getFileSize(name string) int64 {
+	dir, file := filepath.Split(name)
+	f, err := http.Dir(dir).Open(file)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	s, err := f.Stat()
+	if err != nil {
+		return 0
+	}
+	return s.Size()
+}
+
+func (this *xgoRouter) serveFile(w *xgoResponseWriter, r *http.Request, name string, fileType string) {
+	if EnableGzip {
+		fileType = fileType[1:]
+		useGzip := false
+		for _, t := range GzipTypes {
+			if fileType == t {
+				useGzip = true
+				break
+			}
+		}
+		if useGzip && this.getFileSize(name) < int64(GzipMinLength) {
+			useGzip = false
+		}
+		if !useGzip {
+			w.gzipWriter = nil
+		}
+	}
+	http.ServeFile(w, r, name)
+}
+
 func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	w := &xgoResponseWriter{
-		app:      this.app,
-		writer:   rw,
-		request:  r,
-		Closed:   false,
-		Finished: false,
+		app:        this.app,
+		writer:     rw,
+		gzipWriter: nil,
+		Closed:     false,
+		Finished:   false,
+	}
+	if EnableGzip && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		w.gzipWriter = gzip.NewWriter(w.writer)
+		defer func(w *xgoResponseWriter) {
+			if w.gzipWriter != nil {
+				w.gzipWriter.Close()
+			}
+		}(w)
 	}
 	var handlerType reflect.Type
 
@@ -275,9 +297,11 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	//static file server
 	if r.Method == "GET" || r.Method == "HEAD" {
 		dotIndex := strings.LastIndex(urlPath, ".")
+		fileType := ""
 		if dotIndex != -1 {
-			if _, ok := this.StaticFileType[urlPath[dotIndex:]]; ok {
-				http.ServeFile(w, r, filepath.Join(AppRoot, urlPath))
+			fileType = urlPath[dotIndex:]
+			if _, ok := this.StaticFileType[fileType]; ok {
+				this.serveFile(w, r, filepath.Join(AppRoot, urlPath), fileType)
 				return
 			}
 		}
@@ -285,7 +309,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		if slashIndex := strings.Index(dir, "/"); slashIndex > 0 {
 			dir := dir[:slashIndex]
 			if _, ok := this.StaticFileDir[dir]; ok {
-				http.ServeFile(w, r, filepath.Join(AppRoot, urlPath))
+				this.serveFile(w, r, filepath.Join(AppRoot, urlPath), fileType)
 				return
 			}
 		}

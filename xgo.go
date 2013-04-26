@@ -48,7 +48,7 @@ func init() {
 		EnableGzip:        true,
 		EnableRouteCache:  true,
 		GzipMinLength:     1024,
-		GzipTypes:         []string{"text", "javascript", "css", "xml"},
+		GzipTypes:         []string{"text", "js", "css", "xml"},
 		SslCertificate:    "",
 		SslCertificateKey: "",
 	}

@@ -93,9 +93,10 @@ func (this *Context) WriteBytes(content []byte) {
 	if this.response.Finished {
 		return
 	}
-
 	this.SetHeader("Content-Type", http.DetectContentType(content))
-
+	if len(content) < GzipMinLength {
+		this.response.gzipWriter = nil
+	}
 	this.response.Write(content)
 
 	this.hdlr.app.callHandlerHook("AfterOutput", hc)
