@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -92,15 +94,13 @@ func (this *App) RegisterCustomHttpStatus(code int, filePath string) {
 }
 
 func (this *App) Run(mode string, addr string, port int) error {
-	listenAddr := net.JoinHostPort(addr, fmt.Sprintf("%d", port))
-
 	var tlsConfig *tls.Config
+	var err error
 	if mode == "https" {
 		tlsConfig = &tls.Config{}
 		if tlsConfig.NextProtos == nil {
 			tlsConfig.NextProtos = []string{"http/1.1"}
 		}
-		var err error
 		tlsConfig.Certificates = make([]tls.Certificate, 1)
 		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(SslCertificate, SslCertificateKey)
 		if err != nil {
@@ -108,23 +108,38 @@ func (this *App) Run(mode string, addr string, port int) error {
 		}
 	}
 
-	l, e := net.Listen("tcp", listenAddr)
-	if e != nil {
-		return e
+	listenUnix := false
+	if strings.HasPrefix(addr, "unix:") {
+		listenUnix = true
+		addr = addr[5:]
 	}
-	this.listener = l
+
+	if listenUnix {
+		os.Remove(addr)
+		this.listener, err = net.Listen("unix", addr)
+		if err == nil {
+			os.Chmod(addr, os.FileMode(0666))
+			defer os.Remove(addr)
+		}
+	} else {
+		listenAddr := net.JoinHostPort(addr, fmt.Sprintf("%d", port))
+		this.listener, err = net.Listen("tcp", listenAddr)
+	}
+	if err != nil {
+		return err
+	}
+	defer this.listener.Close()
 
 	switch mode {
 	case "http":
-		http.Serve(l, this.router)
+		http.Serve(this.listener, this.router)
 	case "fcgi":
-		fcgi.Serve(l, this.router)
+		fcgi.Serve(this.listener, this.router)
 	case "https":
-		http.Serve(tls.NewListener(l, tlsConfig), this.router)
+		http.Serve(tls.NewListener(this.listener, tlsConfig), this.router)
 	default:
-		http.Serve(l, this.router)
+		http.Serve(this.listener, this.router)
 	}
-	l.Close()
 	return nil
 }
 
