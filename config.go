@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"encoding/json"
@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 )
 
-type xgoConfig struct {
+type wtkConfig struct {
 	file string
 	data []byte
 	cfgs []interface{}
 }
 
-func (this *xgoConfig) LoadFile(filename string) error {
+func (this *wtkConfig) LoadFile(filename string) error {
 	var err error
 	this.data, err = ioutil.ReadFile(filename)
 	if err != nil {
@@ -25,16 +25,16 @@ func (this *xgoConfig) LoadFile(filename string) error {
 	return nil
 }
 
-func (this *xgoConfig) ReloadFile() error {
+func (this *wtkConfig) ReloadFile() error {
 	return this.LoadFile(this.file)
 }
 
-func (this *xgoConfig) RegisterConfig(cfg interface{}) error {
+func (this *wtkConfig) RegisterConfig(cfg interface{}) error {
 	this.cfgs = append(this.cfgs, cfg)
 	return this.loadConfig(cfg)
 }
 
-func (this *xgoConfig) loadConfig(cfg interface{}) error {
+func (this *wtkConfig) loadConfig(cfg interface{}) error {
 	if len(this.data) > 0 {
 		err := json.Unmarshal(this.data, cfg)
 		if err != nil {
@@ -47,7 +47,7 @@ func (this *xgoConfig) loadConfig(cfg interface{}) error {
 	return errors.New("config file is not loaded")
 }
 
-type xgoDefaultConfig struct {
+type wtkDefaultConfig struct {
 	AppRoot           string
 	ListenAddr        string
 	ListenPort        int
@@ -65,7 +65,7 @@ type xgoDefaultConfig struct {
 	SslCertificateKey string
 }
 
-func (this *xgoDefaultConfig) OnLoaded() {
+func (this *wtkDefaultConfig) OnLoaded() {
 	AppRoot = this.AppRoot
 	ListenAddr = this.ListenAddr
 	ListenPort = this.ListenPort

@@ -1,11 +1,11 @@
-package xgo
+package wtk
 
 import (
 	"net/http"
 )
 
 type HandlerInterface interface {
-	Init(*App, *Context, *Template, *Session, string)
+	Init(*Server, *Context, *Template, *Session, string)
 	Get()
 	Post()
 	Delete()
@@ -18,14 +18,14 @@ type HandlerInterface interface {
 }
 
 type Handler struct {
-	app      *App
+	server   *Server
 	Context  *Context
 	Template *Template
 	Session  *Session
 }
 
-func (this *Handler) Init(app *App, ctx *Context, tpl *Template, sess *Session, cn string) {
-	this.app = app
+func (this *Handler) Init(server *Server, ctx *Context, tpl *Template, sess *Session, cn string) {
+	this.server = server
 	this.Context = ctx
 	this.Context.hdlr = this
 	this.Template = tpl

@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"bufio"
@@ -17,7 +17,7 @@ import (
 
 type Context struct {
 	hdlr           *Handler
-	response       *xgoResponseWriter
+	response       *wtkResponseWriter
 	ResponseWriter http.ResponseWriter
 	Request        *http.Request
 	pathVars       url.Values
@@ -89,7 +89,7 @@ func (this *Context) WriteBytes(content []byte) {
 		return
 	}
 	hc := this.hdlr.getHookHandler()
-	this.hdlr.app.callHandlerHook("BeforeOutput", hc)
+	this.hdlr.server.callHandlerHook("BeforeOutput", hc)
 	if this.response.Finished {
 		return
 	}
@@ -99,7 +99,7 @@ func (this *Context) WriteBytes(content []byte) {
 	}
 	this.response.Write(content)
 
-	this.hdlr.app.callHandlerHook("AfterOutput", hc)
+	this.hdlr.server.callHandlerHook("AfterOutput", hc)
 	if this.response.Finished {
 		return
 	}
@@ -113,7 +113,7 @@ func (this *Context) Abort(status int, content string) {
 }
 
 func (this *Context) Redirect(status int, url string) {
-	prefix := this.hdlr.app.router.PrefixPath
+	prefix := this.hdlr.server.router.PrefixPath
 	http.Redirect(this.response, this.Request, prefix+url, status)
 	this.finish()
 }
@@ -167,8 +167,8 @@ func (this *Context) SetCookieWithArgs(name string, value string, maxage int, pa
 		cookie.Expires = time.Now().Add(d)
 		cookie.MaxAge = maxage
 	}
-	if path == "" && this.hdlr.app.router.PrefixPath != "" {
-		cookie.Path = this.hdlr.app.router.PrefixPath
+	if path == "" && this.hdlr.server.router.PrefixPath != "" {
+		cookie.Path = this.hdlr.server.router.PrefixPath
 	}
 	http.SetCookie(this.response, cookie)
 }

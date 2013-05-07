@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"crypto/aes"
@@ -13,10 +13,10 @@ import (
 	"reflect"
 )
 
-type xgoUtil struct{}
-type xgoOsUtil struct{}
+type wtkUtil struct{}
+type wtkOsUtil struct{}
 
-func (this *xgoUtil) CallMethod(i interface{}, name string, args ...interface{}) bool {
+func (this *wtkUtil) CallMethod(i interface{}, name string, args ...interface{}) bool {
 	t := reflect.TypeOf(i)
 	if t.Kind() != reflect.Ptr {
 		return false
@@ -34,13 +34,13 @@ func (this *xgoUtil) CallMethod(i interface{}, name string, args ...interface{})
 	return false
 }
 
-func (this *xgoUtil) getCookieSig(secret, text string) string {
+func (this *wtkUtil) getCookieSig(secret, text string) string {
 	hm := hmac.New(sha1.New, []byte(secret))
 	hm.Write([]byte(text))
 	hex := fmt.Sprintf("%02x", hm.Sum(nil))
 	return hex
 }
-func (this *xgoUtil) AesEncrypt(secret, text []byte) []byte {
+func (this *wtkUtil) AesEncrypt(secret, text []byte) []byte {
 	h := sha256.New()
 	h.Write(secret)
 	key := h.Sum(nil)
@@ -50,10 +50,10 @@ func (this *xgoUtil) AesEncrypt(secret, text []byte) []byte {
 	return text
 }
 
-func (this *xgoUtil) AesDecrypt(secret, text []byte) []byte {
+func (this *wtkUtil) AesDecrypt(secret, text []byte) []byte {
 	return this.AesEncrypt(secret, text)
 }
-func (this *xgoUtil) GetAppPath() (string, error) {
+func (this *wtkUtil) GetAppPath() (string, error) {
 	cmd := os.Args[0]
 	p, err := filepath.Abs(cmd)
 	if err != nil {
@@ -73,7 +73,7 @@ func (this *xgoUtil) GetAppPath() (string, error) {
 	return "", os.ErrNotExist
 }
 
-func (this *xgoUtil) getDefaultRootPath() string {
+func (this *wtkUtil) getDefaultRootPath() string {
 	p, err := this.GetAppPath()
 	if err != nil {
 		return "./"
@@ -81,14 +81,14 @@ func (this *xgoUtil) getDefaultRootPath() string {
 	return filepath.Dir(p)
 }
 
-type xgoAutoIncr struct {
+type wtkAutoIncr struct {
 	start, step int
 	queue       chan int
 	running     bool
 }
 
-func newAutoIncr(start, step int) (ai *xgoAutoIncr) {
-	ai = &xgoAutoIncr{
+func newAutoIncr(start, step int) (ai *wtkAutoIncr) {
+	ai = &wtkAutoIncr{
 		start:   start,
 		step:    step,
 		running: true,
@@ -98,18 +98,18 @@ func newAutoIncr(start, step int) (ai *xgoAutoIncr) {
 	return
 }
 
-func (ai *xgoAutoIncr) process() {
+func (ai *wtkAutoIncr) process() {
 	defer func() { recover() }()
 	for i := ai.start; ai.running; i = i + ai.step {
 		ai.queue <- i
 	}
 }
 
-func (ai *xgoAutoIncr) Fetch() int {
+func (ai *wtkAutoIncr) Fetch() int {
 	return <-ai.queue
 }
 
-func (ai *xgoAutoIncr) Close() {
+func (ai *wtkAutoIncr) Close() {
 	ai.running = false
 	close(ai.queue)
 }

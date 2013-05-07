@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"html/template"
@@ -25,7 +25,7 @@ type Template struct {
 	hdlr      *Handler
 	tpl       *template.Template
 	Vars      map[string]interface{}
-	tplResult *xgoTemplateResult
+	tplResult *wtkTemplateResult
 }
 
 func (this *Template) SetVar(name string, value interface{}) {
@@ -79,18 +79,18 @@ func (this *Template) Parse() bool {
 	}
 
 	hc := this.hdlr.getHookHandler()
-	this.hdlr.app.callHandlerHook("BeforeRender", hc)
+	this.hdlr.server.callHandlerHook("BeforeRender", hc)
 	if this.hdlr.Context.response.Finished {
 		return true
 	}
 
-	this.tplResult = &xgoTemplateResult{data: []byte{}}
+	this.tplResult = &wtkTemplateResult{data: []byte{}}
 	err := this.tpl.Execute(this.tplResult, this.Vars)
 	if err != nil {
 		return false
 	}
 
-	this.hdlr.app.callHandlerHook("AfterRender", hc)
+	this.hdlr.server.callHandlerHook("AfterRender", hc)
 	return true
 }
 
@@ -116,23 +116,23 @@ func (this *Template) SetResultString(s string) {
 	this.SetResult([]byte(s))
 }
 
-type xgoTemplateResult struct {
+type wtkTemplateResult struct {
 	data []byte
 }
 
-func (this *xgoTemplateResult) Write(p []byte) (n int, err error) {
+func (this *wtkTemplateResult) Write(p []byte) (n int, err error) {
 	this.data = append(this.data, p...)
 	return len(p), nil
 }
 
-func (this *xgoTemplateResult) SetBytes(p []byte) {
+func (this *wtkTemplateResult) SetBytes(p []byte) {
 	this.data = p
 }
 
-func (this *xgoTemplateResult) String() string {
+func (this *wtkTemplateResult) String() string {
 	return string(this.data)
 }
 
-func (this *xgoTemplateResult) Bytes() []byte {
+func (this *wtkTemplateResult) Bytes() []byte {
 	return this.data
 }

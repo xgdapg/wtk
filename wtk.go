@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"os"
@@ -6,11 +6,11 @@ import (
 )
 
 var (
-	app               *App
-	apps              map[int]*App
-	appIdGen          *xgoAutoIncr
-	util              *xgoUtil
-	cfg               *xgoConfig
+	server            *Server
+	servers           map[int]*Server
+	serverIdGen       *wtkAutoIncr
+	util              *wtkUtil
+	cfg               *wtkConfig
 	cfgFile           string
 	AppRoot           string
 	ListenAddr        string
@@ -30,19 +30,19 @@ var (
 )
 
 func init() {
-	util = &xgoUtil{}
+	util = &wtkUtil{}
 	AppRoot, err := os.Getwd()
 	if err != nil {
 		AppRoot = util.getDefaultRootPath()
 	}
-	defaultCfg := &xgoDefaultConfig{
+	defaultCfg := &wtkDefaultConfig{
 		AppRoot:           AppRoot,
 		ListenAddr:        "",
 		ListenPort:        80,
 		RunMode:           "http",
 		EnableStats:       true,
 		CookieSecret:      "foobar",
-		SessionName:       "XGOSESSID",
+		SessionName:       "wtkSESSID",
 		SessionTTL:        60 * 15,
 		EnablePprof:       true,
 		EnableGzip:        true,
@@ -64,67 +64,67 @@ func init() {
 		}
 	}
 
-	cfg = &xgoConfig{}
+	cfg = &wtkConfig{}
 	cfg.LoadFile(cfgFile)
 	cfg.RegisterConfig(defaultCfg)
-	apps = make(map[int]*App)
-	appIdGen = newAutoIncr(1, 1)
-	app = NewApp()
+	servers = make(map[int]*Server)
+	serverIdGen = newAutoIncr(1, 1)
+	server = NewServer()
 }
 
-func NewApp() *App {
-	id := appIdGen.Fetch()
-	a := new(App).init(id)
-	apps[id] = a
+func NewServer() *Server {
+	id := serverIdGen.Fetch()
+	a := new(Server).init(id)
+	servers[id] = a
 	return a
 }
 
-func GetMainApp() *App {
-	return app
+func MainServer() *Server {
+	return server
 }
 
 func AddRoute(pattern string, c HandlerInterface) *Route {
-	return app.AddRoute(pattern, c)
+	return server.AddRoute(pattern, c)
 }
 
 func RemoveRoute(pattern string) {
-	app.RemoveRoute(pattern)
+	server.RemoveRoute(pattern)
 }
 
 func SetPrefixPath(prefix string) {
-	app.SetPrefixPath(prefix)
+	server.SetPrefixPath(prefix)
 }
 
 func AddHandlerHook(event string, hookFunc HookHandlerFunc) {
-	app.AddHandlerHook(event, hookFunc)
+	server.AddHandlerHook(event, hookFunc)
 }
 
 func AddStaticFileDir(dirs ...string) {
-	app.AddStaticFileDir(dirs...)
+	server.AddStaticFileDir(dirs...)
 }
 
 func RemoveStaticFileDir(dirs ...string) {
-	app.RemoveStaticFileDir(dirs...)
+	server.RemoveStaticFileDir(dirs...)
 }
 
 func AddStaticFileType(ext ...string) {
-	app.AddStaticFileType(ext...)
+	server.AddStaticFileType(ext...)
 }
 
 func RemoveStaticFileType(ext ...string) {
-	app.RemoveStaticFileType(ext...)
+	server.RemoveStaticFileType(ext...)
 }
 
 func RegisterSessionStorage(storage SessionStorageInterface) {
-	app.RegisterSessionStorage(storage)
+	server.RegisterSessionStorage(storage)
 }
 
 func RegisterCustomHttpStatus(code int, filePath string) {
-	app.RegisterCustomHttpStatus(code, filePath)
+	server.RegisterCustomHttpStatus(code, filePath)
 }
 
 func Run() error {
-	return app.Run(RunMode, ListenAddr, ListenPort)
+	return server.Run(RunMode, ListenAddr, ListenPort)
 }
 
 func LoadConfig(conf interface{}) error {

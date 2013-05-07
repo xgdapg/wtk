@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"compress/gzip"
@@ -12,19 +12,19 @@ import (
 	"sync"
 )
 
-type xgoResponseWriter struct {
-	app        *App
+type wtkResponseWriter struct {
+	server     *Server
 	writer     http.ResponseWriter
 	gzipWriter *gzip.Writer
 	Closed     bool
 	Finished   bool
 }
 
-func (this *xgoResponseWriter) Header() http.Header {
+func (this *wtkResponseWriter) Header() http.Header {
 	return this.writer.Header()
 }
 
-func (this *xgoResponseWriter) Write(p []byte) (int, error) {
+func (this *wtkResponseWriter) Write(p []byte) (int, error) {
 	if this.Closed {
 		return 0, nil
 	}
@@ -36,7 +36,7 @@ func (this *xgoResponseWriter) Write(p []byte) (int, error) {
 	return this.writer.Write(p)
 }
 
-func (this *xgoResponseWriter) WriteHeader(code int) {
+func (this *wtkResponseWriter) WriteHeader(code int) {
 	if this.Closed {
 		return
 	}
@@ -45,7 +45,7 @@ func (this *xgoResponseWriter) WriteHeader(code int) {
 		this.writer.WriteHeader(code)
 	}
 
-	if filepath, ok := app.customHttpStatus[code]; ok {
+	if filepath, ok := server.customHttpStatus[code]; ok {
 		content, err := ioutil.ReadFile(filepath)
 		if err != nil {
 			content = []byte(http.StatusText(code))
@@ -55,7 +55,7 @@ func (this *xgoResponseWriter) WriteHeader(code int) {
 	}
 }
 
-func (this *xgoResponseWriter) Close() {
+func (this *wtkResponseWriter) Close() {
 	this.Closed = true
 }
 
@@ -72,27 +72,27 @@ func (this *Route) Scheme(scheme string) {
 	this.scheme = scheme
 }
 
-type xgoRouteCache struct {
+type wtkRouteCache struct {
 	Route *Route
 	Vars  url.Values
 }
 
-type xgoRouter struct {
-	app            *App
+type wtkRouter struct {
+	server         *Server
 	Routes         []*Route
 	StaticRoutes   map[string]*Route
 	StaticFileDir  map[string]int
 	StaticFileType map[string]int
 	PrefixPath     string
 	lock           *sync.Mutex
-	routeCache     map[string]*xgoRouteCache
+	routeCache     map[string]*wtkRouteCache
 }
 
-func (this *xgoRouter) ClearRouteCache() {
-	this.routeCache = make(map[string]*xgoRouteCache)
+func (this *wtkRouter) ClearRouteCache() {
+	this.routeCache = make(map[string]*wtkRouteCache)
 }
 
-func (this *xgoRouter) AddStaticFileDir(dirs ...string) {
+func (this *wtkRouter) AddStaticFileDir(dirs ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -101,7 +101,7 @@ func (this *xgoRouter) AddStaticFileDir(dirs ...string) {
 	}
 }
 
-func (this *xgoRouter) RemoveStaticFileDir(dirs ...string) {
+func (this *wtkRouter) RemoveStaticFileDir(dirs ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -113,7 +113,7 @@ func (this *xgoRouter) RemoveStaticFileDir(dirs ...string) {
 	}
 }
 
-func (this *xgoRouter) AddStaticFileType(exts ...string) {
+func (this *wtkRouter) AddStaticFileType(exts ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -125,7 +125,7 @@ func (this *xgoRouter) AddStaticFileType(exts ...string) {
 	}
 }
 
-func (this *xgoRouter) RemoveStaticFileType(exts ...string) {
+func (this *wtkRouter) RemoveStaticFileType(exts ...string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -140,7 +140,7 @@ func (this *xgoRouter) RemoveStaticFileType(exts ...string) {
 	}
 }
 
-func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
+func (this *wtkRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -195,7 +195,7 @@ func (this *xgoRouter) AddRoute(pattern string, c HandlerInterface) *Route {
 	return route
 }
 
-func (this *xgoRouter) RemoveRoute(pattern string) {
+func (this *wtkRouter) RemoveRoute(pattern string) {
 	this.lock.Lock()
 	defer this.lock.Unlock()
 
@@ -223,7 +223,7 @@ func (this *xgoRouter) RemoveRoute(pattern string) {
 	}
 }
 
-func (this *xgoRouter) SetPrefixPath(prefix string) {
+func (this *wtkRouter) SetPrefixPath(prefix string) {
 	if prefix[0] != '/' {
 		prefix = "/" + prefix
 	}
@@ -233,7 +233,7 @@ func (this *xgoRouter) SetPrefixPath(prefix string) {
 	this.PrefixPath = prefix
 }
 
-func (this *xgoRouter) getFileSize(name string) int64 {
+func (this *wtkRouter) getFileSize(name string) int64 {
 	dir, file := filepath.Split(name)
 	f, err := http.Dir(dir).Open(file)
 	if err != nil {
@@ -247,7 +247,7 @@ func (this *xgoRouter) getFileSize(name string) int64 {
 	return s.Size()
 }
 
-func (this *xgoRouter) serveFile(w *xgoResponseWriter, r *http.Request, name string, fileType string) {
+func (this *wtkRouter) serveFile(w *wtkResponseWriter, r *http.Request, name string, fileType string) {
 	if EnableGzip {
 		fileType = fileType[1:]
 		useGzip := false
@@ -267,9 +267,9 @@ func (this *xgoRouter) serveFile(w *xgoResponseWriter, r *http.Request, name str
 	http.ServeFile(w, r, name)
 }
 
-func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	w := &xgoResponseWriter{
-		app:        this.app,
+func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	w := &wtkResponseWriter{
+		server:     this.server,
 		writer:     rw,
 		gzipWriter: nil,
 		Closed:     false,
@@ -277,7 +277,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	if EnableGzip && strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 		w.gzipWriter = gzip.NewWriter(w.writer)
-		defer func(w *xgoResponseWriter) {
+		defer func(w *wtkResponseWriter) {
 			if w.gzipWriter != nil {
 				w.gzipWriter.Close()
 			}
@@ -356,7 +356,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 			handlerType = route.handlerType
 			if EnableRouteCache {
-				this.routeCache[urlPath] = &xgoRouteCache{
+				this.routeCache[urlPath] = &wtkRouteCache{
 					Route: route,
 					Vars:  pathVars,
 				}
@@ -389,12 +389,12 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 	sess := &Session{
 		hdlr:           nil,
-		sessionManager: this.app.session,
+		sessionManager: this.server.session,
 		sessionId:      ctx.GetSecureCookie(SessionName),
 		ctx:            ctx,
 		data:           nil,
 	}
-	util.CallMethod(ci, "Init", this.app, ctx, tpl, sess, handlerType.Name())
+	util.CallMethod(ci, "Init", this.server, ctx, tpl, sess, handlerType.Name())
 	if w.Finished {
 		return
 	}
@@ -405,7 +405,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		Session:  sess,
 	}
 
-	this.app.callHandlerHook("AfterInit", hc)
+	this.server.callHandlerHook("AfterInit", hc)
 	if w.Finished {
 		return
 	}
@@ -430,7 +430,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 
-	this.app.callHandlerHook("BeforeMethod"+method, hc)
+	this.server.callHandlerHook("BeforeMethod"+method, hc)
 	if w.Finished {
 		return
 	}
@@ -440,7 +440,7 @@ func (this *xgoRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.app.callHandlerHook("AfterMethod"+method, hc)
+	this.server.callHandlerHook("AfterMethod"+method, hc)
 	if w.Finished {
 		return
 	}

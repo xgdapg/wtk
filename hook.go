@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 const (
 	HookAfterInit           = "AfterInit"
@@ -22,8 +22,8 @@ const (
 	HookAfterOutput         = "AfterOutput"
 )
 
-type xgoHook struct {
-	app          *App
+type wtkHook struct {
+	server       *Server
 	handlerHooks map[string][]HookHandlerFunc
 }
 
@@ -35,7 +35,7 @@ type HookHandler struct {
 
 type HookHandlerFunc func(*HookHandler)
 
-func (this *xgoHook) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
+func (this *wtkHook) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	if this.handlerHooks == nil {
 		this.handlerHooks = make(map[string][]HookHandlerFunc)
 	}
@@ -45,7 +45,7 @@ func (this *xgoHook) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	this.handlerHooks[event] = append(this.handlerHooks[event], hookFunc)
 }
 
-func (this *xgoHook) CallHandlerHook(event string, hc *HookHandler) {
+func (this *wtkHook) CallHandlerHook(event string, hc *HookHandler) {
 	if funcList, ok := this.handlerHooks[event]; ok {
 		for _, hookFunc := range funcList {
 			hookFunc(hc)

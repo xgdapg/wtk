@@ -1,44 +1,44 @@
-## Xgo
-Xgo is a simple web toolkit to build webapp easily in Go.  
+## wtk
+wtk is a simple web toolkit to build webapp easily in Go.  
 
 ## Installation
 
-    go get github.com/xgdapg/xgo
+    go get github.com/xgdapg/wtk
 
 ## GoDoc
-[http://godoc.org/github.com/xgdapg/xgo](http://godoc.org/github.com/xgdapg/xgo)
+[http://godoc.org/github.com/xgdapg/wtk](http://godoc.org/github.com/xgdapg/wtk)
 
 ## Example
 ```go
 package main
 
 import (
-	"github.com/xgdapg/xgo"
+	"github.com/xgdapg/wtk"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	xgo.AddRoute("/", &IndexHandler{})
+	wtk.AddRoute("/", &IndexHandler{})
 	// /post/id123 与 /post/id123-2 会被路由到同一个控制器进行处理。
 	// Both /post/id123 and /post/id123-2 will be routed to the same Handler.
-	xgo.AddRoute("/post/{id}", &PageHandler{})
-	xgo.AddRoute("/post/{id}-{page([0-9]+)}", &PageHandler{})
+	wtk.AddRoute("/post/{id}", &PageHandler{})
+	wtk.AddRoute("/post/{id}-{page([0-9]+)}", &PageHandler{})
 	// 注册一个钩子，当模板解析完成时会回调钩子函数进行处理。
 	// Register a hook, and while the template has been parsed, the hook will be called.
-	xgo.AddHandlerHook(xgo.HookAfterRender, func(c *xgo.HookHandler) {
+	wtk.AddHandlerHook(wtk.HookAfterRender, func(c *wtk.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/post") {
 			c.Template.SetResultString(c.Template.GetResultString() + "<div>append a footer</div>")
 		}
 	})
 	// 注册自定义404显示页面
 	// Register a custom 404 page
-	xgo.RegisterCustomHttpStatus(404, "notfound.html")
-	xgo.Run()
+	wtk.RegisterCustomHttpStatus(404, "notfound.html")
+	wtk.Run()
 }
 
 type IndexHandler struct {
-	xgo.Handler
+	wtk.Handler
 }
 
 func (this *IndexHandler) Get() {
@@ -46,7 +46,7 @@ func (this *IndexHandler) Get() {
 }
 
 type PageHandler struct {
-	xgo.Handler
+	wtk.Handler
 }
 
 func (this *PageHandler) Get() {
@@ -66,7 +66,7 @@ func (this *PageHandler) Get() {
 
 ## Config
 You can set the values of all the variables above in a config file.  
-By default, xgo reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let xgo read the config file from "configFilePath".  
+By default, wtk reads "app.conf" as config file in the same folder with app, and you can run your app like "./app configFilePath" to let wtk read the config file from "configFilePath".  
 The config file format is json:  
 
 	{
@@ -91,7 +91,7 @@ As you see, you can also add some custom keys to config file, and fetch them wit
 		CustomStringArray: []string{"default string1", "default string2"},
 	}
 	// load the config into this struct
-	xgo.LoadConfig(cfg)
+	wtk.LoadConfig(cfg)
 	// now the cfg.CustomString is "string value", or "default string" if there's no "CustomString" field in the config file or some errors occurred
 	fmt.Println(cfg.CustomString)
 If there is a method "OnLoaded" in your config struct (eg. customConfig), it will be called after everytime you load/reload the config.
@@ -101,10 +101,10 @@ If there is a method "OnLoaded" in your config struct (eg. customConfig), it wil
 	}
 
 ## Hook
-Xgo provides hook for us to control the request and response out of handler.  
+wtk provides hook for us to control the request and response out of handler.  
 For example, if we need a user authorization in each admin page, we can register a hook like this:
 
-	xgo.AddHandlerHook(xgo.HookAfterInit, func(c *xgo.HookHandler) {
+	wtk.AddHandlerHook(wtk.HookAfterInit, func(c *wtk.HookHandler) {
 		if strings.HasPrefix(c.Context.Request.URL.Path, "/admin") {
 			succ := checkUser()
 			if !succ {
@@ -117,7 +117,7 @@ For example, if we need a user authorization in each admin page, we can register
 Sessions are stored in memory by default.  
 To store them in database or other places, you need a new implementation of SessionStorageInterface and register it:
 
-	xgo.RegisterSessionStorage(storage SessionStorageInterface)
+	wtk.RegisterSessionStorage(storage SessionStorageInterface)
 Usage:
 
 	func (this *PageHandler) Get() {
@@ -127,7 +127,7 @@ Usage:
 	}
 
 #### Upload files
-In xgo, there is an easy way to upload files.
+In wtk, there is an easy way to upload files.
 
 	func (this *UploadHandler) Post() {
 		f, err := this.Context.GetUploadFile("userfile")
@@ -148,14 +148,14 @@ The returned variable f has several members:
   - f.GetRawContentType(): return the Content-Type of the uploaded file, detected with http.DetectContentType().
 
 ## Custom error pages
-It is usually very useful to have a custom 404 page. In xgo, we can register a 404 page like this:
+It is usually very useful to have a custom 404 page. In wtk, we can register a 404 page like this:
 
-	xgo.RegisterCustomHttpStatus(404, "notfound.html")
+	wtk.RegisterCustomHttpStatus(404, "notfound.html")
 or other http status code, for example, 403
 
-	xgo.RegisterCustomHttpStatus(403, "forbidden.html")
+	wtk.RegisterCustomHttpStatus(403, "forbidden.html")
 
 ## Unix Domain Socket (*NIX only)
-Set xgo.ListenAddr begin with "unix:", for example:
+Set wtk.ListenAddr begin with "unix:", for example:
 
-	xgo.ListenAddr = "unix:/var/run/xgo.sock"
+	wtk.ListenAddr = "unix:/var/run/wtk.sock"

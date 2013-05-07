@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"fmt"
@@ -13,12 +13,12 @@ type SessionStorageInterface interface {
 	Delete(string)
 }
 
-type xgoSessionManager struct {
+type wtkSessionManager struct {
 	sessionStorage SessionStorageInterface
 	inited         bool
 }
 
-func (this *xgoSessionManager) RegisterStorage(storage SessionStorageInterface) {
+func (this *wtkSessionManager) RegisterStorage(storage SessionStorageInterface) {
 	if storage == nil {
 		return
 	}
@@ -26,36 +26,36 @@ func (this *xgoSessionManager) RegisterStorage(storage SessionStorageInterface) 
 	this.inited = false
 }
 
-func (this *xgoSessionManager) checkInit() {
+func (this *wtkSessionManager) checkInit() {
 	if !this.inited {
 		this.sessionStorage.Init(SessionTTL)
 		this.inited = true
 	}
 }
 
-func (this *xgoSessionManager) CreateSessionID() string {
+func (this *wtkSessionManager) CreateSessionID() string {
 	this.checkInit()
 	return this.sessionStorage.CreateSessionID()
 }
 
-func (this *xgoSessionManager) Set(sid string, data map[string]string) {
+func (this *wtkSessionManager) Set(sid string, data map[string]string) {
 	this.checkInit()
 	this.sessionStorage.Set(sid, data)
 }
 
-func (this *xgoSessionManager) Get(sid string) map[string]string {
+func (this *wtkSessionManager) Get(sid string) map[string]string {
 	this.checkInit()
 	return this.sessionStorage.Get(sid)
 }
 
-func (this *xgoSessionManager) Delete(sid string) {
+func (this *wtkSessionManager) Delete(sid string) {
 	this.checkInit()
 	this.sessionStorage.Delete(sid)
 }
 
 type Session struct {
 	hdlr           *Handler
-	sessionManager *xgoSessionManager
+	sessionManager *wtkSessionManager
 	sessionId      string
 	ctx            *Context
 	data           map[string]string
@@ -91,28 +91,28 @@ func (this *Session) Delete(key string) {
 	this.sessionManager.Set(this.sessionId, this.data)
 }
 
-type xgoDefaultSessionStorage struct {
+type wtkDefaultSessionStorage struct {
 	ttl   int64
-	datas map[string]xgoDefaultSessionStorageData
-	incr  *xgoAutoIncr
+	datas map[string]wtkDefaultSessionStorageData
+	incr  *wtkAutoIncr
 }
 
-type xgoDefaultSessionStorageData struct {
+type wtkDefaultSessionStorageData struct {
 	expires int64
 	data    map[string]string
 }
 
-func (this *xgoDefaultSessionStorage) Init(ttl int64) {
+func (this *wtkDefaultSessionStorage) Init(ttl int64) {
 	if this.datas != nil {
 		return
 	}
 	this.ttl = ttl
-	this.datas = make(map[string]xgoDefaultSessionStorageData)
+	this.datas = make(map[string]wtkDefaultSessionStorageData)
 	go this.gc()
 	this.incr = newAutoIncr(1, 1)
 }
 
-func (this *xgoDefaultSessionStorage) gc() {
+func (this *wtkDefaultSessionStorage) gc() {
 	for {
 		if len(this.datas) > 0 {
 			now := time.Now().Unix()
@@ -126,20 +126,20 @@ func (this *xgoDefaultSessionStorage) gc() {
 	}
 }
 
-func (this *xgoDefaultSessionStorage) CreateSessionID() string {
+func (this *wtkDefaultSessionStorage) CreateSessionID() string {
 	t := time.Now()
 	return "SESS" + fmt.Sprintf("%d%d", t.Unix(), this.incr.Fetch())
 }
 
-func (this *xgoDefaultSessionStorage) Set(sid string, data map[string]string) {
-	d := xgoDefaultSessionStorageData{
+func (this *wtkDefaultSessionStorage) Set(sid string, data map[string]string) {
+	d := wtkDefaultSessionStorageData{
 		expires: time.Now().Unix() + this.ttl,
 		data:    data,
 	}
 	this.datas[sid] = d
 }
 
-func (this *xgoDefaultSessionStorage) Get(sid string) map[string]string {
+func (this *wtkDefaultSessionStorage) Get(sid string) map[string]string {
 	if data, exist := this.datas[sid]; exist {
 		data.expires = time.Now().Unix() + this.ttl
 		return data.data
@@ -147,6 +147,6 @@ func (this *xgoDefaultSessionStorage) Get(sid string) map[string]string {
 	return make(map[string]string)
 }
 
-func (this *xgoDefaultSessionStorage) Delete(sid string) {
+func (this *wtkDefaultSessionStorage) Delete(sid string) {
 	delete(this.datas, sid)
 }

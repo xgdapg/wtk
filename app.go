@@ -1,4 +1,4 @@
-package xgo
+package wtk
 
 import (
 	"crypto/tls"
@@ -11,89 +11,89 @@ import (
 	"sync"
 )
 
-type App struct {
+type Server struct {
 	Id               int
 	listener         net.Listener
-	router           *xgoRouter
-	hook             *xgoHook
-	session          *xgoSessionManager
+	router           *wtkRouter
+	hook             *wtkHook
+	session          *wtkSessionManager
 	customHttpStatus map[int]string
-	// extHook *xgoHook
+	// extHook *wtkHook
 }
 
-func (this *App) init(id int) *App {
+func (this *Server) init(id int) *Server {
 	this.Id = id
-	this.router = &xgoRouter{
-		app:            this,
+	this.router = &wtkRouter{
+		server:         this,
 		Routes:         []*Route{},
 		StaticRoutes:   make(map[string]*Route),
 		StaticFileDir:  make(map[string]int),
 		StaticFileType: make(map[string]int),
 		lock:           new(sync.Mutex),
-		routeCache:     make(map[string]*xgoRouteCache),
+		routeCache:     make(map[string]*wtkRouteCache),
 	}
-	this.hook = &xgoHook{app: this}
-	// this.extHook = &xgoHook{app: this}
-	this.session = new(xgoSessionManager)
-	this.session.RegisterStorage(new(xgoDefaultSessionStorage))
+	this.hook = &wtkHook{server: this}
+	// this.extHook = &wtkHook{server: this}
+	this.session = new(wtkSessionManager)
+	this.session.RegisterStorage(new(wtkDefaultSessionStorage))
 	this.customHttpStatus = make(map[int]string)
 	return this
 }
 
-func (this *App) AddRoute(pattern string, c HandlerInterface) *Route {
+func (this *Server) AddRoute(pattern string, c HandlerInterface) *Route {
 	return this.router.AddRoute(pattern, c)
 }
 
-func (this *App) RemoveRoute(pattern string) {
+func (this *Server) RemoveRoute(pattern string) {
 	this.router.RemoveRoute(pattern)
 }
 
-func (this *App) SetPrefixPath(prefix string) {
+func (this *Server) SetPrefixPath(prefix string) {
 	this.router.SetPrefixPath(prefix)
 }
 
-func (this *App) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
+func (this *Server) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	this.hook.AddHandlerHook(event, hookFunc)
 }
 
-func (this *App) callHandlerHook(event string, hc *HookHandler) {
+func (this *Server) callHandlerHook(event string, hc *HookHandler) {
 	this.hook.CallHandlerHook(event, hc)
 	// this.extHook.CallHandlerHook(event, hc)
 }
 
-// func (this *App) registerAddonHandlerHook(event string, hookFunc HookHandlerFunc) {
+// func (this *Server) registerAddonHandlerHook(event string, hookFunc HookHandlerFunc) {
 // 	this.extHook.AddHandlerHook(event, hookFunc)
 // }
 
-// func (this *App) clearExtHook(event string, hookFunc HookHandlerFunc) {
-// 	this.extHook = &xgoHook{app: this}
+// func (this *Server) clearExtHook(event string, hookFunc HookHandlerFunc) {
+// 	this.extHook = &wtkHook{server: this}
 // }
 
-func (this *App) AddStaticFileDir(dirs ...string) {
+func (this *Server) AddStaticFileDir(dirs ...string) {
 	this.router.AddStaticFileDir(dirs...)
 }
 
-func (this *App) RemoveStaticFileDir(dirs ...string) {
+func (this *Server) RemoveStaticFileDir(dirs ...string) {
 	this.router.RemoveStaticFileDir(dirs...)
 }
 
-func (this *App) AddStaticFileType(ext ...string) {
+func (this *Server) AddStaticFileType(ext ...string) {
 	this.router.AddStaticFileType(ext...)
 }
 
-func (this *App) RemoveStaticFileType(ext ...string) {
+func (this *Server) RemoveStaticFileType(ext ...string) {
 	this.router.RemoveStaticFileType(ext...)
 }
 
-func (this *App) RegisterSessionStorage(storage SessionStorageInterface) {
+func (this *Server) RegisterSessionStorage(storage SessionStorageInterface) {
 	this.session.RegisterStorage(storage)
 }
 
-func (this *App) RegisterCustomHttpStatus(code int, filePath string) {
+func (this *Server) RegisterCustomHttpStatus(code int, filePath string) {
 	this.customHttpStatus[code] = filePath
 }
 
-func (this *App) Run(mode string, addr string, port int) error {
+func (this *Server) Run(mode string, addr string, port int) error {
 	var tlsConfig *tls.Config
 	var err error
 	if mode == "https" {
@@ -143,17 +143,17 @@ func (this *App) Run(mode string, addr string, port int) error {
 	return nil
 }
 
-func (this *App) Stop() {
+func (this *Server) Stop() {
 	this.listener.Close()
 }
 
-func (this *App) Close() {
-	delete(apps, this.Id)
+func (this *Server) Close() {
+	delete(servers, this.Id)
 	this.Stop()
 }
 
-func (this *App) Clone() *App {
-	a := NewApp()
+func (this *Server) Clone() *Server {
+	a := NewServer()
 	a.router = this.router
 	a.hook = this.hook
 	a.session = this.session
