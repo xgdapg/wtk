@@ -26,10 +26,16 @@ type Context struct {
 }
 
 func (this *Context) GetPathVar(name string) string {
+	if this.pathVars == nil {
+		this.pathVars = make(url.Values)
+	}
 	return this.pathVars.Get(name)
 }
 
 func (this *Context) GetPathVars(name string) []string {
+	if this.pathVars == nil {
+		this.pathVars = make(url.Values)
+	}
 	vs, ok := this.pathVars[name]
 	if !ok || len(vs) == 0 {
 		return []string{}

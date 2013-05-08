@@ -2,19 +2,22 @@ package wtk
 
 import (
 	"compress/gzip"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 type wtkResponseWriter struct {
 	server     *Server
+	request    *http.Request
 	writer     http.ResponseWriter
 	gzipWriter *gzip.Writer
+	httpStatus int
 	Closed     bool
 	Finished   bool
 }
@@ -27,9 +30,18 @@ func (this *wtkResponseWriter) Write(p []byte) (int, error) {
 	if this.Closed {
 		return 0, nil
 	}
+
 	if this.gzipWriter != nil {
 		this.Header().Set("Content-Encoding", "gzip")
 		this.Header().Del("Content-Length")
+	}
+
+	if this.httpStatus > 0 {
+		this.writer.WriteHeader(this.httpStatus)
+		this.httpStatus = 0
+	}
+
+	if this.gzipWriter != nil {
 		return this.gzipWriter.Write(p)
 	}
 	return this.writer.Write(p)
@@ -39,17 +51,17 @@ func (this *wtkResponseWriter) WriteHeader(code int) {
 	if this.Closed {
 		return
 	}
+	this.httpStatus = code
 
+	handler := &Handler{}
+	handler.init(this.server, this, this.request)
+	hc := handler.getHookHandler()
+	this.server.callHandlerHook("HttpStatus"+strconv.Itoa(code), hc)
+	if this.Closed {
+		return
+	}
 	if code != http.StatusOK {
 		this.writer.WriteHeader(code)
-	}
-
-	if filepath, ok := server.customHttpStatus[code]; ok {
-		content, err := ioutil.ReadFile(filepath)
-		if err != nil {
-			content = []byte(http.StatusText(code))
-		}
-		this.Write(content)
 		this.Close()
 	}
 }
@@ -230,18 +242,18 @@ func (this *wtkRouter) SetPrefixPath(prefix string) {
 	this.PrefixPath = prefix
 }
 
-func (this *wtkRouter) getFileSize(name string) int64 {
+func (this *wtkRouter) getFileSize(name string) (int64, error) {
 	dir, file := filepath.Split(name)
 	f, err := http.Dir(dir).Open(file)
 	if err != nil {
-		return 0
+		return 0, err
 	}
 	defer f.Close()
 	s, err := f.Stat()
 	if err != nil {
-		return 0
+		return 0, err
 	}
-	return s.Size()
+	return s.Size(), nil
 }
 
 func (this *wtkRouter) serveFile(w *wtkResponseWriter, r *http.Request, name string, fileType string) {
@@ -254,8 +266,11 @@ func (this *wtkRouter) serveFile(w *wtkResponseWriter, r *http.Request, name str
 				break
 			}
 		}
-		if useGzip && this.getFileSize(name) < int64(GzipMinLength) {
-			useGzip = false
+		if useGzip {
+			fileSize, err := this.getFileSize(name)
+			if err == nil && fileSize < int64(GzipMinLength) {
+				useGzip = false
+			}
 		}
 		if !useGzip {
 			w.gzipWriter = nil
@@ -267,8 +282,10 @@ func (this *wtkRouter) serveFile(w *wtkResponseWriter, r *http.Request, name str
 func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	w := &wtkResponseWriter{
 		server:     this.server,
+		request:    r,
 		writer:     rw,
 		gzipWriter: nil,
+		httpStatus: 0,
 		Closed:     false,
 		Finished:   false,
 	}
@@ -280,7 +297,6 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 		}(w)
 	}
-	var handler HandlerInterface
 
 	if this.PrefixPath != "" {
 		if !strings.HasPrefix(r.URL.Path, this.PrefixPath+"/") {
@@ -311,6 +327,8 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	var handler HandlerInterface
 
 	if route, ok := this.StaticRoutes[urlPath]; ok {
 		if route.scheme == "" || urlScheme == route.scheme {
@@ -367,39 +385,17 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := &Context{
-		hdlr:           nil,
-		response:       w,
-		ResponseWriter: w,
-		Request:        r,
-		pathVars:       pathVars,
-		queryVars:      nil,
-		formVars:       nil,
-	}
-	tpl := &Template{
-		hdlr:      nil,
-		tpl:       nil,
-		Vars:      make(map[string]interface{}),
-		tplResult: nil,
-	}
-	sess := &Session{
-		hdlr:           nil,
-		sessionManager: this.server.session,
-		sessionId:      ctx.GetSecureCookie(SessionName),
-		ctx:            ctx,
-		data:           nil,
-	}
+	handlerType := reflect.Indirect(reflect.ValueOf(handler)).Type()
+	newHandler := reflect.New(handlerType).Interface().(HandlerInterface)
 
-	handler.Init(this.server, ctx, tpl, sess)
+	newHandler.init(this.server, w, r)
+	newHandler.context().pathVars = pathVars
+
 	if w.Finished {
 		return
 	}
 
-	hc := &HookHandler{
-		Context:  ctx,
-		Template: tpl,
-		Session:  sess,
-	}
+	hc := newHandler.getHookHandler()
 
 	this.server.callHandlerHook("AfterInit", hc)
 	if w.Finished {
@@ -411,25 +407,25 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		method = "Get"
-		methodFunc = handler.Get
+		methodFunc = newHandler.Get
 	case "POST":
 		method = "Post"
-		methodFunc = handler.Post
+		methodFunc = newHandler.Post
 	case "HEAD":
 		method = "Head"
-		methodFunc = handler.Head
+		methodFunc = newHandler.Head
 	case "DELETE":
 		method = "Delete"
-		methodFunc = handler.Delete
+		methodFunc = newHandler.Delete
 	case "PUT":
 		method = "Put"
-		methodFunc = handler.Put
+		methodFunc = newHandler.Put
 	case "PATCH":
 		method = "Patch"
-		methodFunc = handler.Patch
+		methodFunc = newHandler.Patch
 	case "OPTIONS":
 		method = "Options"
-		methodFunc = handler.Options
+		methodFunc = newHandler.Options
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 		return
@@ -450,12 +446,12 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handler.Render()
+	newHandler.Render()
 	if w.Finished {
 		return
 	}
 
-	handler.Output()
+	newHandler.Output()
 	if w.Finished {
 		return
 	}

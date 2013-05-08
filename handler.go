@@ -5,7 +5,11 @@ import (
 )
 
 type HandlerInterface interface {
-	Init(*Server, *Context, *Template, *Session)
+	init(server *Server, w *wtkResponseWriter, r *http.Request)
+	getHookHandler() *HookHandler
+	context() *Context
+	template() *Template
+	session() *Session
 	Get()
 	Post()
 	Delete()
@@ -24,17 +28,48 @@ type Handler struct {
 	Session  *Session
 }
 
-func (this *Handler) Init(server *Server, ctx *Context, tpl *Template, sess *Session) {
+func (this *Handler) init(server *Server, w *wtkResponseWriter, r *http.Request) {
 	this.server = server
-	this.Context = ctx
-	this.Context.hdlr = this
-	this.Template = tpl
-	this.Template.hdlr = this
-	for n, v := range tplVars {
-		tpl.SetVar(n, v)
+
+	this.Context = &Context{
+		hdlr:           this,
+		response:       w,
+		ResponseWriter: w,
+		Request:        r,
+		pathVars:       nil,
+		queryVars:      nil,
+		formVars:       nil,
 	}
-	this.Session = sess
-	this.Session.hdlr = this
+
+	this.Template = &Template{
+		hdlr:      this,
+		tpl:       nil,
+		vars:      nil,
+		tplResult: nil,
+	}
+	for n, v := range tplVars {
+		this.Template.SetVar(n, v)
+	}
+
+	this.Session = &Session{
+		hdlr:           this,
+		sessionManager: server.session,
+		sessionId:      "",
+		data:           nil,
+		inited:         false,
+	}
+}
+
+func (this *Handler) context() *Context {
+	return this.Context
+}
+
+func (this *Handler) template() *Template {
+	return this.Template
+}
+
+func (this *Handler) session() *Session {
+	return this.Session
 }
 
 func (this *Handler) Get() {

@@ -24,16 +24,22 @@ func SetTemplateVar(name string, value interface{}) {
 type Template struct {
 	hdlr      *Handler
 	tpl       *template.Template
-	Vars      map[string]interface{}
+	vars      map[string]interface{}
 	tplResult *wtkTemplateResult
 }
 
 func (this *Template) SetVar(name string, value interface{}) {
-	this.Vars[name] = value
+	if this.vars == nil {
+		this.vars = make(map[string]interface{})
+	}
+	this.vars[name] = value
 }
 
 func (this *Template) GetVar(name string) interface{} {
-	if val, ok := this.Vars[name]; ok {
+	if this.vars == nil {
+		this.vars = make(map[string]interface{})
+	}
+	if val, ok := this.vars[name]; ok {
 		return val
 	}
 	return nil
@@ -84,8 +90,11 @@ func (this *Template) Parse() bool {
 		return true
 	}
 
+	if this.vars == nil {
+		this.vars = make(map[string]interface{})
+	}
 	this.tplResult = &wtkTemplateResult{data: []byte{}}
-	err := this.tpl.Execute(this.tplResult, this.Vars)
+	err := this.tpl.Execute(this.tplResult, this.vars)
 	if err != nil {
 		return false
 	}

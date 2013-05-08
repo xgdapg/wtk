@@ -57,18 +57,23 @@ type Session struct {
 	hdlr           *Handler
 	sessionManager *wtkSessionManager
 	sessionId      string
-	ctx            *Context
 	data           map[string]string
+	inited         bool
 }
 
 func (this *Session) init() {
+	if this.inited {
+		return
+	}
+	this.sessionId = this.hdlr.Context.GetSecureCookie(SessionName)
 	if this.sessionId == "" {
 		this.sessionId = this.sessionManager.CreateSessionID()
-		this.ctx.SetSecureCookie(SessionName, this.sessionId, 0)
+		this.hdlr.Context.SetSecureCookie(SessionName, this.sessionId, 0)
 	}
 	if this.data == nil {
 		this.data = this.sessionManager.Get(this.sessionId)
 	}
+	this.inited = true
 }
 
 func (this *Session) Get(key string) string {
