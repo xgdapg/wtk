@@ -71,12 +71,12 @@ func (this *wtkResponseWriter) Close() {
 }
 
 type Route struct {
-	pattern  string
-	slashCnt int
-	regexp   *regexp.Regexp
-	params   []string
-	scheme   string
-	handler  HandlerInterface
+	pattern     string
+	slashCnt    int
+	regexp      *regexp.Regexp
+	params      []string
+	scheme      string
+	handlerType reflect.Type
 }
 
 func (this *Route) Scheme(scheme string) {
@@ -159,12 +159,12 @@ func (this *wtkRouter) AddRoute(pattern string, handler HandlerInterface) *Route
 		pattern = "/" + pattern
 	}
 	route := &Route{
-		pattern:  pattern,
-		slashCnt: strings.Count(pattern, "/"),
-		regexp:   nil,
-		params:   []string{},
-		scheme:   "",
-		handler:  handler,
+		pattern:     pattern,
+		slashCnt:    strings.Count(pattern, "/"),
+		regexp:      nil,
+		params:      []string{},
+		scheme:      "",
+		handlerType: reflect.Indirect(reflect.ValueOf(handler)).Type(),
 	}
 	paramCnt := strings.Count(pattern, "{")
 	if paramCnt != strings.Count(pattern, "}") {
@@ -328,22 +328,22 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var handler HandlerInterface
+	var handlerType reflect.Type
 
 	if route, ok := this.StaticRoutes[urlPath]; ok {
 		if route.scheme == "" || urlScheme == route.scheme {
-			handler = route.handler
+			handlerType = route.handlerType
 		}
 	}
 
 	pathVars := make(url.Values)
 	if EnableRouteCache {
 		if rc, ok := this.routeCache[urlPath]; ok {
-			handler = rc.Route.handler
+			handlerType = rc.Route.handlerType
 			pathVars = rc.Vars
 		}
 	}
-	if handler == nil {
+	if handlerType == nil {
 		slashCnt := strings.Count(urlPath, "/")
 		for _, route := range this.Routes {
 			if slashCnt != route.slashCnt {
@@ -369,7 +369,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					pathVars.Add(route.params[i], match)
 				}
 			}
-			handler = route.handler
+			handlerType = route.handlerType
 			if EnableRouteCache {
 				this.routeCache[urlPath] = &wtkRouteCache{
 					Route: route,
@@ -380,22 +380,21 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if handler == nil {
+	if handlerType == nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	handlerType := reflect.Indirect(reflect.ValueOf(handler)).Type()
-	newHandler := reflect.New(handlerType).Interface().(HandlerInterface)
+	handler := reflect.New(handlerType).Interface().(HandlerInterface)
 
-	newHandler.init(this.server, w, r)
-	newHandler.context().pathVars = pathVars
+	handler.init(this.server, w, r)
+	handler.context().pathVars = pathVars
 
 	if w.Finished {
 		return
 	}
 
-	hc := newHandler.getHookHandler()
+	hc := handler.getHookHandler()
 
 	this.server.callHandlerHook("AfterInit", hc)
 	if w.Finished {
@@ -407,25 +406,25 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		method = "Get"
-		methodFunc = newHandler.Get
+		methodFunc = handler.Get
 	case "POST":
 		method = "Post"
-		methodFunc = newHandler.Post
+		methodFunc = handler.Post
 	case "HEAD":
 		method = "Head"
-		methodFunc = newHandler.Head
+		methodFunc = handler.Head
 	case "DELETE":
 		method = "Delete"
-		methodFunc = newHandler.Delete
+		methodFunc = handler.Delete
 	case "PUT":
 		method = "Put"
-		methodFunc = newHandler.Put
+		methodFunc = handler.Put
 	case "PATCH":
 		method = "Patch"
-		methodFunc = newHandler.Patch
+		methodFunc = handler.Patch
 	case "OPTIONS":
 		method = "Options"
-		methodFunc = newHandler.Options
+		methodFunc = handler.Options
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 		return
@@ -446,12 +445,12 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newHandler.Render()
+	handler.Render()
 	if w.Finished {
 		return
 	}
 
-	newHandler.Output()
+	handler.Output()
 	if w.Finished {
 		return
 	}
