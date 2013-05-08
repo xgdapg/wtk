@@ -3,6 +3,7 @@ package wtk
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/fcgi"
@@ -18,7 +19,6 @@ type Server struct {
 	router   *wtkRouter
 	hook     *wtkHook
 	session  *wtkSessionManager
-	// extHook *wtkHook
 }
 
 func (this *Server) init(id int) *Server {
@@ -33,7 +33,6 @@ func (this *Server) init(id int) *Server {
 		routeCache:     make(map[string]*wtkRouteCache),
 	}
 	this.hook = &wtkHook{server: this}
-	// this.extHook = &wtkHook{server: this}
 	this.session = new(wtkSessionManager)
 	this.session.RegisterStorage(new(wtkDefaultSessionStorage))
 	return this
@@ -59,18 +58,18 @@ func (this *Server) AddHttpStatusHook(statusCode int, hookFunc HookHandlerFunc) 
 	this.hook.AddHandlerHook("HttpStatus"+strconv.Itoa(statusCode), hookFunc)
 }
 
-func (this *Server) callHandlerHook(event string, hc *HookHandler) {
-	this.hook.CallHandlerHook(event, hc)
-	// this.extHook.CallHandlerHook(event, hc)
+func (this *Server) SetHttpStatusPage(statusCode int, pageFile string) {
+	this.AddHttpStatusHook(statusCode, func(h *HookHandler) {
+		s, err := ioutil.ReadFile(pageFile)
+		if err == nil {
+			h.Context.WriteBytes(s)
+		}
+	})
 }
 
-// func (this *Server) registerAddonHandlerHook(event string, hookFunc HookHandlerFunc) {
-// 	this.extHook.AddHandlerHook(event, hookFunc)
-// }
-
-// func (this *Server) clearExtHook(event string, hookFunc HookHandlerFunc) {
-// 	this.extHook = &wtkHook{server: this}
-// }
+func (this *Server) callHandlerHook(event string, hc *HookHandler) {
+	this.hook.CallHandlerHook(event, hc)
+}
 
 func (this *Server) AddStaticFileDir(dirs ...string) {
 	this.router.AddStaticFileDir(dirs...)

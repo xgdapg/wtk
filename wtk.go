@@ -103,6 +103,10 @@ func AddHttpStatusHook(statusCode int, hookFunc HookHandlerFunc) {
 	server.AddHttpStatusHook(statusCode, hookFunc)
 }
 
+func SetHttpStatusPage(statusCode int, pageFile string) {
+	server.SetHttpStatusPage(statusCode, pageFile)
+}
+
 func AddStaticFileDir(dirs ...string) {
 	server.AddStaticFileDir(dirs...)
 }
