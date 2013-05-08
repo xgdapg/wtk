@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"net/http/fcgi"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 type Server struct {
-	Id               int
-	listener         net.Listener
-	router           *wtkRouter
-	hook             *wtkHook
-	session          *wtkSessionManager
-	customHttpStatus map[int]string
+	Id       int
+	listener net.Listener
+	router   *wtkRouter
+	hook     *wtkHook
+	session  *wtkSessionManager
 	// extHook *wtkHook
 }
 
@@ -36,7 +36,6 @@ func (this *Server) init(id int) *Server {
 	// this.extHook = &wtkHook{server: this}
 	this.session = new(wtkSessionManager)
 	this.session.RegisterStorage(new(wtkDefaultSessionStorage))
-	this.customHttpStatus = make(map[int]string)
 	return this
 }
 
@@ -54,6 +53,10 @@ func (this *Server) SetPrefixPath(prefix string) {
 
 func (this *Server) AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	this.hook.AddHandlerHook(event, hookFunc)
+}
+
+func (this *Server) AddHttpStatusHook(statusCode int, hookFunc HookHandlerFunc) {
+	this.hook.AddHandlerHook("HttpStatus"+strconv.Itoa(statusCode), hookFunc)
 }
 
 func (this *Server) callHandlerHook(event string, hc *HookHandler) {
@@ -87,10 +90,6 @@ func (this *Server) RemoveStaticFileType(ext ...string) {
 
 func (this *Server) RegisterSessionStorage(storage SessionStorageInterface) {
 	this.session.RegisterStorage(storage)
-}
-
-func (this *Server) RegisterCustomHttpStatus(code int, filePath string) {
-	this.customHttpStatus[code] = filePath
 }
 
 func (this *Server) Run(mode string, addr string, port int) error {
@@ -157,6 +156,5 @@ func (this *Server) Clone() *Server {
 	a.router = this.router
 	a.hook = this.hook
 	a.session = this.session
-	a.customHttpStatus = this.customHttpStatus
 	return a
 }

@@ -99,6 +99,10 @@ func AddHandlerHook(event string, hookFunc HookHandlerFunc) {
 	server.AddHandlerHook(event, hookFunc)
 }
 
+func AddHttpStatusHook(statusCode int, hookFunc HookHandlerFunc) {
+	server.AddHttpStatusHook(statusCode, hookFunc)
+}
+
 func AddStaticFileDir(dirs ...string) {
 	server.AddStaticFileDir(dirs...)
 }
@@ -117,10 +121,6 @@ func RemoveStaticFileType(ext ...string) {
 
 func RegisterSessionStorage(storage SessionStorageInterface) {
 	server.RegisterSessionStorage(storage)
-}
-
-func RegisterCustomHttpStatus(code int, filePath string) {
-	server.RegisterCustomHttpStatus(code, filePath)
 }
 
 func Run() error {
