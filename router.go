@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -60,12 +59,12 @@ func (this *wtkResponseWriter) Close() {
 }
 
 type Route struct {
-	pattern     string
-	slashCnt    int
-	regexp      *regexp.Regexp
-	params      []string
-	scheme      string
-	handlerType reflect.Type
+	pattern  string
+	slashCnt int
+	regexp   *regexp.Regexp
+	params   []string
+	scheme   string
+	handler  HandlerInterface
 }
 
 func (this *Route) Scheme(scheme string) {
@@ -140,22 +139,20 @@ func (this *wtkRouter) RemoveStaticFileType(exts ...string) {
 	}
 }
 
-func (this *wtkRouter) AddRoute(pattern string, c HandlerInterface) *Route {
+func (this *wtkRouter) AddRoute(pattern string, handler HandlerInterface) *Route {
 	this.lock.Lock()
 	defer this.lock.Unlock()
-
-	handlerType := reflect.Indirect(reflect.ValueOf(c)).Type()
 
 	if pattern[0] != '/' {
 		pattern = "/" + pattern
 	}
 	route := &Route{
-		pattern:     pattern,
-		slashCnt:    strings.Count(pattern, "/"),
-		regexp:      nil,
-		params:      []string{},
-		scheme:      "",
-		handlerType: handlerType,
+		pattern:  pattern,
+		slashCnt: strings.Count(pattern, "/"),
+		regexp:   nil,
+		params:   []string{},
+		scheme:   "",
+		handler:  handler,
 	}
 	paramCnt := strings.Count(pattern, "{")
 	if paramCnt != strings.Count(pattern, "}") {
@@ -283,7 +280,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 		}(w)
 	}
-	var handlerType reflect.Type
+	var handler HandlerInterface
 
 	if this.PrefixPath != "" {
 		if !strings.HasPrefix(r.URL.Path, this.PrefixPath+"/") {
@@ -317,18 +314,18 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	if route, ok := this.StaticRoutes[urlPath]; ok {
 		if route.scheme == "" || urlScheme == route.scheme {
-			handlerType = route.handlerType
+			handler = route.handler
 		}
 	}
 
 	pathVars := make(url.Values)
 	if EnableRouteCache {
 		if rc, ok := this.routeCache[urlPath]; ok {
-			handlerType = rc.Route.handlerType
+			handler = rc.Route.handler
 			pathVars = rc.Vars
 		}
 	}
-	if handlerType == nil {
+	if handler == nil {
 		slashCnt := strings.Count(urlPath, "/")
 		for _, route := range this.Routes {
 			if slashCnt != route.slashCnt {
@@ -354,7 +351,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					pathVars.Add(route.params[i], match)
 				}
 			}
-			handlerType = route.handlerType
+			handler = route.handler
 			if EnableRouteCache {
 				this.routeCache[urlPath] = &wtkRouteCache{
 					Route: route,
@@ -365,12 +362,10 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if handlerType == nil {
+	if handler == nil {
 		http.NotFound(w, r)
 		return
 	}
-
-	ci := reflect.New(handlerType).Interface()
 
 	ctx := &Context{
 		hdlr:           nil,
@@ -394,7 +389,8 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		ctx:            ctx,
 		data:           nil,
 	}
-	util.CallMethod(ci, "Init", this.server, ctx, tpl, sess, handlerType.Name())
+
+	handler.Init(this.server, ctx, tpl, sess)
 	if w.Finished {
 		return
 	}
@@ -410,24 +406,33 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var methodFunc func()
 	var method string
 	switch r.Method {
 	case "GET":
 		method = "Get"
+		methodFunc = handler.Get
 	case "POST":
 		method = "Post"
+		methodFunc = handler.Post
 	case "HEAD":
 		method = "Head"
+		methodFunc = handler.Head
 	case "DELETE":
 		method = "Delete"
+		methodFunc = handler.Delete
 	case "PUT":
 		method = "Put"
+		methodFunc = handler.Put
 	case "PATCH":
 		method = "Patch"
+		methodFunc = handler.Patch
 	case "OPTIONS":
 		method = "Options"
+		methodFunc = handler.Options
 	default:
 		http.Error(w, "Method Not Allowed", 405)
+		return
 	}
 
 	this.server.callHandlerHook("BeforeMethod"+method, hc)
@@ -435,7 +440,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.CallMethod(ci, method)
+	methodFunc()
 	if w.Finished {
 		return
 	}
@@ -445,12 +450,12 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.CallMethod(ci, "Render")
+	handler.Render()
 	if w.Finished {
 		return
 	}
 
-	util.CallMethod(ci, "Output")
+	handler.Output()
 	if w.Finished {
 		return
 	}

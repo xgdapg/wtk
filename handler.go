@@ -5,7 +5,7 @@ import (
 )
 
 type HandlerInterface interface {
-	Init(*Server, *Context, *Template, *Session, string)
+	Init(*Server, *Context, *Template, *Session)
 	Get()
 	Post()
 	Delete()
@@ -24,7 +24,7 @@ type Handler struct {
 	Session  *Session
 }
 
-func (this *Handler) Init(server *Server, ctx *Context, tpl *Template, sess *Session, cn string) {
+func (this *Handler) Init(server *Server, ctx *Context, tpl *Template, sess *Session) {
 	this.server = server
 	this.Context = ctx
 	this.Context.hdlr = this
