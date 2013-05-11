@@ -1,6 +1,9 @@
 ## WTK
 WTK is a simple web toolkit to build webapp easily in Go.  
 
+## Requirement
+Go 1.1+ or tip
+
 ## Installation
 
     go get github.com/xgdapg/wtk

@@ -64,7 +64,7 @@ func (this *Context) GetQueryVars(name string) []string {
 func (this *Context) GetFormVar(name string) string {
 	if this.formVars == nil {
 		this.Request.ParseForm()
-		this.formVars = this.Request.Form
+		this.formVars = this.Request.PostForm
 	}
 	return this.formVars.Get(name)
 }
@@ -72,7 +72,7 @@ func (this *Context) GetFormVar(name string) string {
 func (this *Context) GetFormVars(name string) []string {
 	if this.formVars == nil {
 		this.Request.ParseForm()
-		this.formVars = this.Request.Form
+		this.formVars = this.Request.PostForm
 	}
 	vs, ok := this.formVars[name]
 	if !ok || len(vs) == 0 {
