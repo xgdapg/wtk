@@ -200,7 +200,6 @@ func (this *Context) SetSecureCookieWithArgs(name string, value string, maxage i
 	}
 	text := name + value + ts
 	text += this.Request.UserAgent()
-	text += strings.Split(this.Request.RemoteAddr, ":")[0]
 
 	sig := util.getCookieSig(CookieSecret, text)
 	val := base64.URLEncoding.EncodeToString(util.AesEncrypt([]byte(CookieSecret), []byte(ts+"|"+value)))
@@ -240,7 +239,6 @@ func (this *Context) GetSecureCookie(name string) string {
 
 	text := name + value + ts
 	text += this.Request.UserAgent()
-	text += strings.Split(this.Request.RemoteAddr, ":")[0]
 
 	if util.getCookieSig(CookieSecret, text) != sig {
 		return ""
