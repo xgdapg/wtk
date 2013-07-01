@@ -61,19 +61,37 @@ func (this *Context) GetQueryVars(name string) []string {
 	return vs
 }
 
-func (this *Context) GetFormVar(name string) string {
+func (this *Context) parseForm() error {
 	if this.formVars == nil {
-		this.Request.ParseForm()
-		this.formVars = this.Request.PostForm
+		v := this.Request.Header.Get("Content-Type")
+		d, _, err := mime.ParseMediaType(v)
+		if err != nil {
+			return err
+		}
+		if d == "multipart/form-data" {
+			err := this.Request.ParseMultipartForm(0)
+			if err != nil {
+				return err
+			}
+			this.formVars = url.Values(this.Request.MultipartForm.Value)
+		} else {
+			err := this.Request.ParseForm()
+			if err != nil {
+				return err
+			}
+			this.formVars = this.Request.PostForm
+		}
 	}
+	return nil
+}
+
+func (this *Context) GetFormVar(name string) string {
+	this.parseForm()
 	return this.formVars.Get(name)
 }
 
 func (this *Context) GetFormVars(name string) []string {
-	if this.formVars == nil {
-		this.Request.ParseForm()
-		this.formVars = this.Request.PostForm
-	}
+	this.parseForm()
 	vs, ok := this.formVars[name]
 	if !ok || len(vs) == 0 {
 		return []string{}
@@ -254,8 +272,9 @@ func (this *Context) GetUploadFile(name string) (*UploadFile, error) {
 	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
 		return nil, errors.New("Incorrect method: " + this.Request.Method)
 	}
+	this.parseForm()
 	if this.Request.MultipartForm == nil {
-		this.Request.ParseMultipartForm(0)
+		return nil, http.ErrNotMultipart
 	}
 	if this.Request.MultipartForm.File != nil {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
@@ -274,8 +293,9 @@ func (this *Context) GetUploadFiles(name string) ([]*UploadFile, error) {
 	if this.Request.Method != "POST" && this.Request.Method != "PUT" {
 		return uploadFiles, errors.New("Incorrect method: " + this.Request.Method)
 	}
+	this.parseForm()
 	if this.Request.MultipartForm == nil {
-		this.Request.ParseMultipartForm(0)
+		return nil, http.ErrNotMultipart
 	}
 	if this.Request.MultipartForm.File != nil {
 		if fhs := this.Request.MultipartForm.File[name]; len(fhs) > 0 {
