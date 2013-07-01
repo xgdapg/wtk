@@ -296,22 +296,18 @@ type UploadFile struct {
 	fileHeader *multipart.FileHeader
 }
 
-func (this *UploadFile) SaveFile(savePath string) error {
+func (this *UploadFile) SaveFile(savePath string) (int64, error) {
 	file, err := this.fileHeader.Open()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer file.Close()
 	f, err := os.OpenFile(savePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer f.Close()
-	_, err = io.Copy(f, file)
-	if err != nil {
-		return err
-	}
-	return nil
+	return io.Copy(f, file)
 }
 
 func (this *UploadFile) GetContentType() string {
