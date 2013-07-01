@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -20,25 +21,7 @@ func init() {
 	testServer.AddRoute("/{key(.*)}", &IndexHandler{})
 }
 
-type tResponseWriter struct {
-	header http.Header
-	body   *bytes.Buffer
-	code   int
-}
-
-func (this *tResponseWriter) Write(p []uint8) (n int, err error) {
-	return this.body.Write(p)
-}
-
-func (this *tResponseWriter) Header() http.Header {
-	return this.header
-}
-
-func (this *tResponseWriter) WriteHeader(code int) {
-	this.code = code
-}
-
-func request(method, path string, body map[string]string, cookie map[string]string) *tResponseWriter {
+func request(method, path string, body map[string]string, cookie map[string]string) *httptest.ResponseRecorder {
 	var reqBody io.ReadCloser
 	bodyType := ""
 	if method == "POST" && body != nil {
@@ -62,11 +45,7 @@ func request(method, path string, body map[string]string, cookie map[string]stri
 			})
 		}
 	}
-	w := &tResponseWriter{
-		header: make(http.Header),
-		body:   new(bytes.Buffer),
-		code:   200,
-	}
+	w := httptest.NewRecorder()
 	testServer.router.ServeHTTP(w, r)
 	return w
 }
@@ -108,9 +87,9 @@ var testData = []*testRequest{
 func TestRequest(t *testing.T) {
 	for _, row := range testData {
 		response := request(row.Method, row.Path, row.Body, row.Cookie)
-		code := response.code
-		body := response.body.String()
-		header := response.header
+		code := response.Code
+		body := response.Body.String()
+		header := response.Header()
 
 		if code != row.ExpectedStatus {
 			t.Fatalf("Path %s want status %d, but got %d", row.Path, row.ExpectedStatus, code)
