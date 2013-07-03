@@ -61,8 +61,9 @@ func (this *wtkResponseWriter) WriteHeader(code int) {
 		return
 	}
 	if code != http.StatusOK {
+		this.gzipWriter = nil
 		this.writer.WriteHeader(code)
-		this.Close()
+		this.httpStatus = 0
 	}
 }
 
