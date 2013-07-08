@@ -47,9 +47,6 @@ func (this *Handler) init(server *Server, w *wtkResponseWriter, r *http.Request)
 		vars:      nil,
 		tplResult: nil,
 	}
-	for n, v := range tplVars {
-		this.Template.SetVar(n, v)
-	}
 
 	this.Session = &Session{
 		hdlr:           this,

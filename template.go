@@ -93,6 +93,11 @@ func (this *Template) Parse() bool {
 	if this.vars == nil {
 		this.vars = make(map[string]interface{})
 	}
+	for n, v := range tplVars {
+		if _, ok := this.vars[n]; !ok {
+			this.vars[n] = v
+		}
+	}
 	this.tplResult = &wtkTemplateResult{data: []byte{}}
 	err := this.tpl.Execute(this.tplResult, this.vars)
 	if err != nil {
