@@ -234,11 +234,16 @@ func (this *wtkRouter) RemoveRoute(pattern string) {
 }
 
 func (this *wtkRouter) SetPrefixPath(prefix string) {
-	if prefix[0] != '/' {
-		prefix = "/" + prefix
+	if prefix == "/" {
+		prefix = ""
 	}
-	if prefix[len(prefix)-1] == '/' {
-		prefix = prefix[:len(prefix)-1]
+	if prefix != "" {
+		if prefix[0] != '/' {
+			prefix = "/" + prefix
+		}
+		if prefix[len(prefix)-1] == '/' {
+			prefix = prefix[:len(prefix)-1]
+		}
 	}
 	this.PrefixPath = prefix
 }
