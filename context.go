@@ -112,8 +112,7 @@ func (this *Context) WriteBytes(content []byte) {
 	if this.response.Closed {
 		return
 	}
-	hc := this.hdlr.getHookHandler()
-	this.hdlr.server.callHandlerHook("BeforeOutput", hc)
+	this.hdlr.getHandler().callHandlerHook("BeforeOutput")
 	if this.response.Finished {
 		return
 	}
@@ -123,7 +122,7 @@ func (this *Context) WriteBytes(content []byte) {
 	}
 	this.response.Write(content)
 
-	this.hdlr.server.callHandlerHook("AfterOutput", hc)
+	this.hdlr.getHandler().callHandlerHook("AfterOutput")
 	if this.response.Finished {
 		return
 	}

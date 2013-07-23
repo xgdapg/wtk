@@ -42,7 +42,7 @@ func init() {
 		RunMode:           "http",
 		EnableStats:       true,
 		CookieSecret:      "foobar",
-		SessionName:       "wtkSESSID",
+		SessionName:       "WTKSESSID",
 		SessionTTL:        60 * 15,
 		EnablePprof:       true,
 		EnableGzip:        true,

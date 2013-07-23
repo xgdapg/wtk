@@ -55,8 +55,7 @@ func (this *wtkResponseWriter) WriteHeader(code int) {
 
 	handler := &Handler{}
 	handler.init(this.server, this, this.request)
-	hc := handler.getHookHandler()
-	this.server.callHandlerHook("HttpStatus"+strconv.Itoa(code), hc)
+	handler.getHandler().callHandlerHook("HttpStatus" + strconv.Itoa(code))
 	if this.Closed {
 		return
 	}
@@ -304,6 +303,10 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}(w)
 	}
 
+	hh := &Handler{}
+	hh.init(this.server, w, r)
+	hh.getHandler().callHandlerHook("ReceiveRequest")
+
 	if this.PrefixPath != "" {
 		if !strings.HasPrefix(r.URL.Path, this.PrefixPath+"/") {
 			http.NotFound(w, r)
@@ -400,9 +403,9 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hc := handler.getHookHandler()
+	h := handler.getHandler()
 
-	this.server.callHandlerHook("AfterInit", hc)
+	h.callHandlerHook("AfterInit")
 	if w.Finished {
 		return
 	}
@@ -436,7 +439,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.server.callHandlerHook("BeforeMethod"+method, hc)
+	h.callHandlerHook("BeforeMethod" + method)
 	if w.Finished {
 		return
 	}
@@ -446,7 +449,7 @@ func (this *wtkRouter) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	this.server.callHandlerHook("AfterMethod"+method, hc)
+	h.callHandlerHook("AfterMethod" + method)
 	if w.Finished {
 		return
 	}

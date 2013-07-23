@@ -67,10 +67,6 @@ func (this *Server) SetHttpStatusPage(statusCode int, pageFile string) {
 	})
 }
 
-func (this *Server) callHandlerHook(event string, hc *HookHandler) {
-	this.hook.CallHandlerHook(event, hc)
-}
-
 func (this *Server) AddStaticFileDir(dirs ...string) {
 	this.router.AddStaticFileDir(dirs...)
 }

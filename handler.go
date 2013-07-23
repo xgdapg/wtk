@@ -6,7 +6,7 @@ import (
 
 type HandlerInterface interface {
 	init(server *Server, w *wtkResponseWriter, r *http.Request)
-	getHookHandler() *HookHandler
+	getHandler() *Handler
 	context() *Context
 	template() *Template
 	session() *Session
@@ -108,10 +108,18 @@ func (this *Handler) Output() {
 	}
 }
 
+func (this *Handler) getHandler() *Handler {
+	return this
+}
+
 func (this *Handler) getHookHandler() *HookHandler {
 	return &HookHandler{
 		Context:  this.Context,
 		Template: this.Template,
 		Session:  this.Session,
 	}
+}
+
+func (this *Handler) callHandlerHook(event string) {
+	this.server.hook.CallHandlerHook(event, this.getHookHandler())
 }

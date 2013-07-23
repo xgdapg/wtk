@@ -1,6 +1,7 @@
 package wtk
 
 const (
+	HookReceiveRequest      = "ReceiveRequest"
 	HookAfterInit           = "AfterInit"
 	HookBeforeMethodGet     = "BeforeMethodGet"
 	HookAfterMethodGet      = "AfterMethodGet"
@@ -31,6 +32,17 @@ type HookHandler struct {
 	Context  *Context
 	Template *Template
 	Session  *Session
+}
+
+func (this *HookHandler) Render() {
+	this.Template.Parse()
+}
+
+func (this *HookHandler) Output() {
+	content := this.Template.GetResult()
+	if len(content) > 0 {
+		this.Context.WriteBytes(content)
+	}
 }
 
 type HookHandlerFunc func(*HookHandler)
