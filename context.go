@@ -112,7 +112,7 @@ func (this *Context) WriteBytes(content []byte) {
 	if this.response.Closed {
 		return
 	}
-	this.hdlr.getHandler().callHandlerHook("BeforeOutput")
+	this.hdlr.callHandlerHook("BeforeOutput")
 	if this.response.Finished {
 		return
 	}
@@ -122,7 +122,7 @@ func (this *Context) WriteBytes(content []byte) {
 	}
 	this.response.Write(content)
 
-	this.hdlr.getHandler().callHandlerHook("AfterOutput")
+	this.hdlr.callHandlerHook("AfterOutput")
 	if this.response.Finished {
 		return
 	}
@@ -136,8 +136,14 @@ func (this *Context) Abort(status int, content string) {
 }
 
 func (this *Context) Redirect(status int, url string) {
-	prefix := this.hdlr.server.router.PrefixPath
-	http.Redirect(this.response, this.Request, prefix+url, status)
+	if url == "" {
+		return
+	}
+	if url[0] == '/' {
+		prefix := this.hdlr.server.router.PrefixPath
+		url = prefix + url
+	}
+	http.Redirect(this.response, this.Request, url, status)
 	this.finish()
 }
 

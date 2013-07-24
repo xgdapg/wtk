@@ -15,6 +15,7 @@ import (
 
 type Server struct {
 	Id       int
+	RunMode  string
 	listener net.Listener
 	router   *wtkRouter
 	hook     *wtkHook
@@ -123,6 +124,7 @@ func (this *Server) Run(mode string, addr string, port int) error {
 		return err
 	}
 	defer this.listener.Close()
+	this.RunMode = mode
 
 	switch mode {
 	case "http":

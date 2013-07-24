@@ -114,6 +114,7 @@ func (this *Handler) getHandler() *Handler {
 
 func (this *Handler) getHookHandler() *HookHandler {
 	return &HookHandler{
+		server:   this.server,
 		Context:  this.Context,
 		Template: this.Template,
 		Session:  this.Session,

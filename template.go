@@ -84,8 +84,7 @@ func (this *Template) Parse() bool {
 		return false
 	}
 
-	h := this.hdlr.getHandler()
-	h.callHandlerHook("BeforeRender")
+	this.hdlr.callHandlerHook("BeforeRender")
 	if this.hdlr.Context.response.Finished {
 		return true
 	}
@@ -104,7 +103,7 @@ func (this *Template) Parse() bool {
 		return false
 	}
 
-	h.callHandlerHook("AfterRender")
+	this.hdlr.callHandlerHook("AfterRender")
 	return true
 }
 

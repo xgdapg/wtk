@@ -29,6 +29,7 @@ type wtkHook struct {
 }
 
 type HookHandler struct {
+	server   *Server
 	Context  *Context
 	Template *Template
 	Session  *Session
@@ -43,6 +44,10 @@ func (this *HookHandler) Output() {
 	if len(content) > 0 {
 		this.Context.WriteBytes(content)
 	}
+}
+
+func (this *HookHandler) GetServer() *Server {
+	return this.server
 }
 
 type HookHandlerFunc func(*HookHandler)
