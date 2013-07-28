@@ -123,7 +123,7 @@ func (this *Server) Run(mode string, addr string, port int) error {
 	if err != nil {
 		return err
 	}
-	defer this.listener.Close()
+	// defer this.listener.Close()
 	this.RunMode = mode
 
 	switch mode {
