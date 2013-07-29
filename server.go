@@ -139,13 +139,11 @@ func (this *Server) Run(mode string, addr string, port int) error {
 	return nil
 }
 
-func (this *Server) Stop() {
-	this.listener.Close()
-}
-
 func (this *Server) Close() {
 	delete(servers, this.Id)
-	this.Stop()
+	if this.listener != nil {
+		this.listener.Close()
+	}
 }
 
 func (this *Server) Clone() *Server {
