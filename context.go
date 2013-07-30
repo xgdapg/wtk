@@ -157,7 +157,7 @@ func (this *Context) NotModified() {
 }
 
 func (this *Context) NotFound() {
-	this.response.WriteHeader(404)
+	http.NotFound(this.response, this.Request)
 	this.finish()
 }
 
